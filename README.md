@@ -12,15 +12,15 @@ This work is based on the following:
 
 ## Roadmap
 
-* v0.0
+* v1.0
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set a Favorite
     * [x] Calculate state - But this is not use in HA
-* v1.0
-    * [ ] Retrieve basic playback status: play, pause, stop, next, prev
-    * [ ] Make it work with Home Assistant
+    * [x] Make it work with Home Assistant
     * [ ] Publish on PyPi
 * v2.0
+    * [ ] Retrieve basic playback status: play, pause, stop, next, prev
+* v3.0
     * [ ] Make the module async
 
 Other functionalities:
