@@ -2,6 +2,8 @@
 
 This aims to control a Libratone Zipp speaker with a Python library usable in Home Assistant.
 
+Install it with `pip install python-libratone-zipp` and use it with `from python_libratone_zipp import LibratoneZipp`! 
+
 ## Acknowledgment
 
 This work is based on the following:
@@ -17,7 +19,7 @@ This work is based on the following:
     * [x] Set a Favorite
     * [x] Calculate state - But this is not use in HA
     * [x] Make it work with Home Assistant
-    * [ ] Publish on PyPi
+    * [x] Publish on PyPi
 * v2.0
     * [ ] Retrieve basic playback status: play, pause, stop, next, prev
 * v3.0
