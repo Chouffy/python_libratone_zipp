@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 setup(
     name="python_libratone_zipp",
     packages=["python_libratone_zipp"],
-    version="1.1.1",
+    version="1.1.2",
     description="Control a Libratone Zipp speaker with a Python library",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -21,9 +21,9 @@ setup(
     },
     author="Chouffy",
     author_email="git@chouffy.net",
-    license="The Unlicense (Unlicense)",
     classifiers=[
-        "License :: OSI Approved :: The Unlicense (Unlicense)",
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
     ],
 )
