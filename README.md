@@ -4,18 +4,6 @@ This aims to control a Libratone Zipp speaker with a Python library, potentially
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
-## Acknowledgment
-
-This work is based on the following:
-
-* The Libratone command list is [coming from this work from Benjamin Hanke](https://www.loxwiki.eu/display/LOX/Libratone+Zipp+WLan+Lautsprecher)
-* Entity to use: [Media Player](https://developers.home-assistant.io/docs/core/entity/media-player)
-* Example of [integrations](https://www.home-assistant.io/integrations/#media-player):
-    * Simple: [Harman Kardon AVR integration](https://www.home-assistant.io/integrations/harman_kardon_avr/) which use [this module](https://github.com/Devqon/hkavr)
-    * Simple: [Clementine Music Player integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/clementine/media_player.py) which use [this module]()
-    * Async: [Frontier Silicon integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/frontier_silicon) with [this module](https://github.com/zhelev/python-afsapi/tree/master/afsapi)
-    * Async with extended features: [Yamaha integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/yamaha/) with [this module](https://github.com/wuub/rxv)
-
 ## Usage
 
 Functions return `True` if they are successful
@@ -110,6 +98,18 @@ Other functionalities:
 * Network
     * [ ] Retrieve current wifi information
     * [ ] Set wifi information
+
+## Acknowledgment
+
+This work is based on the following:
+
+* The Libratone command list is [coming from this work from Benjamin Hanke](https://www.loxwiki.eu/display/LOX/Libratone+Zipp+WLan+Lautsprecher)
+* Entity to use: [Media Player](https://developers.home-assistant.io/docs/core/entity/media-player)
+* Example of [integrations](https://www.home-assistant.io/integrations/#media-player):
+    * Simple: [Harman Kardon AVR integration](https://www.home-assistant.io/integrations/harman_kardon_avr/) which use [this module](https://github.com/Devqon/hkavr)
+    * Simple: [Clementine Music Player integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/clementine/media_player.py) which use [this module]()
+    * Async: [Frontier Silicon integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/frontier_silicon) with [this module](https://github.com/zhelev/python-afsapi/tree/master/afsapi)
+    * Async with extended features: [Yamaha integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/yamaha/) with [this module](https://github.com/wuub/rxv)
 
 ## License
 
