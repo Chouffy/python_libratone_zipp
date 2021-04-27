@@ -144,6 +144,15 @@ class LibratoneZipp:
     @property
     def state(self):
         return self._state
+    @property
+    def voicing(self):
+        return self._voicing
+    @property
+    def voicing_list(self):
+        list = []
+        for voicing_id in VOICING:
+            list.append(voicing_id)
+        return list
 
     def play(self):
         try:
@@ -205,10 +214,12 @@ class LibratoneZipp:
             _LOGGER.warning("Error: favorite command not sent.")
             return False
 
-    def voicing(self, voicing_id):
+    def voicing_set(self, voicing_id):
         try:
             self._send_command(VOICING[voicing_id])
+            self._voicing = voicing_id
             return True
         except:
             _LOGGER.warning("Error: voicing command not sent.")
+            self._voicing = None
             return False
