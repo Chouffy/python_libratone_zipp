@@ -42,6 +42,8 @@ Command | Action
 
 ### States
 
+Right now, state are calculated and not fetched from the device. Some of them (sleep) are not even used.
+
 State variable | Variable content | Description
 -|-|-
 `STATE_OFF` | `"OFF"` | The speaker is off or cannot be reached
