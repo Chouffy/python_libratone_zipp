@@ -60,6 +60,7 @@ State variable | Variable content | Description
     * [x] Set a Voicing
 * v2.0
     * [ ] Retrieve basic playback status: play, pause, stop, next, prev
+    * [ ] Set volume
 * v3.0
     * [ ] Make the module async
 
@@ -98,6 +99,8 @@ Other functionalities:
 * Network
     * [ ] Retrieve current wifi information
     * [ ] Set wifi information
+* Multi-room
+    * [ ] Implement SoundSpace Link
 
 ## Acknowledgment
 
