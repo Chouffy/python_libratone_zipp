@@ -42,6 +42,8 @@ State variable | Variable content | Description
 
 ## Roadmap
 
+Currently trying to understand the communication between the Libratone Android app and the speaker.
+
 ### Module improvement
 
 * [ ] Clean text variables, declare variable on top instead of using text like "play"
