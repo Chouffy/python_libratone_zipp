@@ -3,5 +3,3 @@ build/
 dist/
 user/
 *.egg-info/
-example.py
-VO_LibratoneZipp.xml
