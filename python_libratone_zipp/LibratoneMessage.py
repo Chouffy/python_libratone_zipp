@@ -4,7 +4,7 @@ import random
 This class provide an object to manage, set and create messages that can be sent to a Libratone Zipp device.
 
 Usage:
-m = LibratoneMessage.LibratoneMessage()     | Create a new object
+m = LibratoneMessage.LibratoneMessage()     | Create a new object, can contain `command` and `data`
 m.set_packet(bytearray_message)             | Parse the content of a received Zipp message into the object
 m.set_command(40)                           | Set the command byte, here to "40"
 m.set_data("PLAY")                          | Set the data bytes, here to "PLAY"
@@ -25,7 +25,7 @@ Example of a message: 0xaaaa??abcd??abcdabcdxxx
 '''
 
 class LibratoneMessage:
-    def __init__(self):
+    def __init__(self, command = None, data = None):
         # Initialization with default values
         self.remoteID = bytearray([0xaa, 0xaa])                     # Hardcoded in Android app
         self.commandType = bytearray([0x02])                        # 2 by default (get), probably 0x01 for fetch
@@ -35,6 +35,9 @@ class LibratoneMessage:
         self.crc = random.randint(1,65535).to_bytes(2, 'big')       # Hardcoded in Android app
         self.datalen = bytearray([0x00, 0x00])                      # Lenght of `data`, in byte
         self.data = ''                                              # See _COMMAND_TABLE[*command*][data]
+
+        if command != None: self.set_command(command)
+        if data != None: self.set_data(data)
 
     # Return packet content as bytearray
     def get_packet(self):
