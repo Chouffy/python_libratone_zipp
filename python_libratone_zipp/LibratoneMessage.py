@@ -34,14 +34,15 @@ class LibratoneMessage:
         # self.crc = bytearray([0x00, 0x00])                          # Hardcoded in Android app
         self.crc = random.randint(1,65535).to_bytes(2, 'big')       # Hardcoded in Android app
         self.datalen = bytearray([0x00, 0x00])                      # Lenght of `data`, in byte
-        self.data = ''                                              # See _COMMAND_TABLE[*command*][data]
+        self.data = None                                           # See _COMMAND_TABLE[*command*][data]
 
         if command != None: self.set_command(command)
         if data != None: self.set_data(data)
 
     # Return packet content as bytearray
     def get_packet(self):
-        return self.remoteID + self.commandType + self.command + self.commandStatus + self.crc + self.datalen + self.data
+        if self.data == None: return self.remoteID + self.commandType + self.command + self.commandStatus + self.crc + self.datalen
+        else: return self.remoteID + self.commandType + self.command + self.commandStatus + self.crc + self.datalen + self.data
     
     # Receive a packet content
     def set_packet(self, luci_packet):
@@ -57,7 +58,7 @@ class LibratoneMessage:
         self.data = luci_packet[slice(10,len(luci_packet))]
         return self.command, self.data
     
-    # Set a command
+    # Set a command with an incoming int
     def set_command(self, command):
         self.command = command.to_bytes(2, 'big')
         return True
