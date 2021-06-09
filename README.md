@@ -4,6 +4,8 @@ This aims to control a Libratone Zipp speaker with a Python library, potentially
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
+Note: current development is in the `dev` branch!
+
 ## Usage
 
 Functions return `True` if they are successful
@@ -12,10 +14,10 @@ Command | Action
 -|-
 **Initialization**
 `from python_libratone_zipp import LibratoneZipp` | Import the library
-`zipp = LibratoneZipp('192.168.1.99', "Zipp")` | Instanciate the LibratoneZipp class
+`zipp = LibratoneZipp('192.168.1.99', "Zipp")` | Instantiate the LibratoneZipp class
 **Properties**
 `zipp.name` | Name of the speaker
-`zipp.host` | IP adress of the speaker
+`zipp.host` | IP address of the speaker
 **Playback commands**
 `zipp.state`| State of the speaker - see below
 `zipp.play()` | Play command
@@ -50,7 +52,7 @@ Currently trying to understand the communication between the Libratone Android a
 * [ ] Create a client
 * [ ] Use discovery method instead of fixed IP
 
-### Functionnality coverage
+### Functionality coverage
 
 * v1.0
     * [x] Set basic playback status: play, pause, stop, next, prev
@@ -61,7 +63,7 @@ Currently trying to understand the communication between the Libratone Android a
 * v1.1
     * [x] Set a Voicing
 * v2.0
-    * [ ] Retrieve basic playback status: play, pause, stop, next, prev
+    * [ ] Retrieve basic playback status: play, pause, stop, next, prev - **WIP in `dev` branch**
     * [ ] Set volume
 * v3.0
     * [ ] Make the module async
@@ -78,7 +80,7 @@ Other functionalities:
 * Standby
     * [ ] Set to immediate standby
     * [ ] Set a standby timer
-    * [ ] Retrive a standby timer
+    * [ ] Retrieve a standby timer
 * Voicing & Room Setting
     * [ ] Retrieve current Voicing
     * [ ] Set Room Setting
@@ -109,12 +111,14 @@ Other functionalities:
 This work is based on the following:
 
 * The Libratone command list is [coming from this work from Benjamin Hanke](https://www.loxwiki.eu/display/LOX/Libratone+Zipp+WLan+Lautsprecher)
+* A lot of further work is based on APK decompilation
 * Entity to use: [Media Player](https://developers.home-assistant.io/docs/core/entity/media-player)
 * Example of [integrations](https://www.home-assistant.io/integrations/#media-player):
     * Simple: [Harman Kardon AVR integration](https://www.home-assistant.io/integrations/harman_kardon_avr/) which use [this module](https://github.com/Devqon/hkavr)
     * Simple: [Clementine Music Player integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/clementine/media_player.py) which use [this module]()
     * Async: [Frontier Silicon integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/frontier_silicon) with [this module](https://github.com/zhelev/python-afsapi/tree/master/afsapi)
     * Async with extended features: [Yamaha integration](https://github.com/home-assistant/core/blob/dev/homeassistant/components/yamaha/) with [this module](https://github.com/wuub/rxv)
+    * Async and simple: [anthemav integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/anthemav) with [this module](https://github.com/nugget/python-anthemav/tree/master/anthemav)
 
 ## License
 
