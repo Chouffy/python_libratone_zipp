@@ -80,7 +80,7 @@ class LibratoneMessage:
 
     # Return various data  as an int format
     def get_commandType_int(self): return self.commandType[0]
-    def get_command_int(self): return self.command[0] + self.command[1]
+    def get_command_int(self): return self.command[0]*256 + self.command[1]
     def get_commandStatus_int(self): return self.commandStatus[0]
 
     # Print packet content for debug purpose
