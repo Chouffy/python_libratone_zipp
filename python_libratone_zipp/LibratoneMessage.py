@@ -25,19 +25,21 @@ Example of a message: 0xaaaa??abcd??abcdabcdxxx
 '''
 
 class LibratoneMessage:
-    def __init__(self, command = None, data = None):
+    def __init__(self, command = None, data = None, packet = None, commandType = None, commandStatus = None):
         # Initialization with default values
         self.remoteID = bytearray([0xaa, 0xaa])                     # Hardcoded in Android app
         self.commandType = bytearray([0x02])                        # 2 by default (get), probably 0x01 for fetch
         self.command = bytearray([0x00, 0x00])                      # See _COMMAND_TABLE[*command*][_command]
         self.commandStatus = bytearray([0x00])                      # 0 but can be set with setCommandStatus in Android app
-        # self.crc = bytearray([0x00, 0x00])                          # Hardcoded in Android app
         self.crc = random.randint(1,65535).to_bytes(2, 'big')       # Hardcoded in Android app
         self.datalen = bytearray([0x00, 0x00])                      # Lenght of `data`, in byte
         self.data = None                                           # See _COMMAND_TABLE[*command*][data]
 
         if command != None: self.set_command(command)
         if data != None: self.set_data(data)
+        if packet != None: self.set_from_packet(packet)
+        if commandType != None: self.set_commandType(commandType)
+        if commandStatus != None: self.set_commandStatus(commandStatus)
 
     # Return packet content as bytearray
     def get_packet(self):
@@ -45,22 +47,32 @@ class LibratoneMessage:
         else: return self.remoteID + self.commandType + self.command + self.commandStatus + self.crc + self.datalen + self.data
     
     # Receive a packet content
-    def set_packet(self, luci_packet):
+    def set_from_packet(self, packet):
         # Extra `to-byte` because I don't manage it that well
         # slice(start, end) with end the OUTBOUND limit (= not included)
-        self.remoteID = luci_packet[slice(0,2)]
-        self.commandType = luci_packet[2].to_bytes(1, 'big')
-        self.command = luci_packet[3] << 8 | luci_packet[4]
+        self.remoteID = packet[slice(0,2)]
+        self.commandType = packet[2].to_bytes(1, 'big')
+        self.command = packet[3] << 8 | packet[4]
         self.command = self.command.to_bytes(2, 'big')
-        self.commandStatus = luci_packet[5].to_bytes(1, 'big')
-        self.crc = luci_packet[slice(6,8)]
-        self.datalen = luci_packet[slice(8,10)]
-        self.data = luci_packet[slice(10,len(luci_packet))]
+        self.commandStatus = packet[5].to_bytes(1, 'big')
+        self.crc = packet[slice(6,8)]
+        self.datalen = packet[slice(8,10)]
+        self.data = packet[slice(10,len(packet))]
         return self.command, self.data
     
+    # Set a commandType with an incoming int
+    def set_commandType(self, commandType):
+        self.commandType = commandType.to_bytes(1, 'big')
+        return True
+
     # Set a command with an incoming int
     def set_command(self, command):
         self.command = command.to_bytes(2, 'big')
+        return True
+
+    # Set a commandStatus with an incoming int
+    def set_commandStatus(self, commandStatus):
+        self.commandStatus = commandStatus.to_bytes(2, 'big')
         return True
 
     # Set a data content along with the correct dataLen
@@ -68,6 +80,11 @@ class LibratoneMessage:
         self.datalen = len(data).to_bytes(2, 'big')
         self.data = bytes(data, "ascii")  
         return True  
+
+    # Return various data  as an int format
+    def get_commandType_int(self): return self.commandType[0]
+    def get_command_int(self): return self.command[0] + self.command[1]
+    def get_commandStatus_int(self): return self.commandStatus[0]
 
     # Print packet content for debug purpose
     def print_packet(self):
