@@ -6,9 +6,10 @@ Command-Line Interface for the `python_libratone_zipp` module.
 """
 
 from python_libratone_zipp import LibratoneZipp
-import time
 
 zipp = LibratoneZipp('192.168.1.31')
+
+zipp.get_all()
 
 while True:
     user_choice = input("Input your command: play, pause, stop, next, prev, play_favorite, voicing, volume, info, exit? ")
