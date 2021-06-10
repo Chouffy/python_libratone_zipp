@@ -25,7 +25,7 @@ Example of a message: 0xaaaa??abcd??abcdabcdxxx
 '''
 
 class LibratoneMessage:
-    def __init__(self, command = None, data = None, packet = None, commandType = None, commandStatus = None):
+    def __init__(self, command:int = None, data:str = None, packet:bytearray = None, commandType:int = None, commandStatus:int = None):
         # Initialization with default values
         self.remoteID = bytearray([0xaa, 0xaa])                     # Hardcoded in Android app
         self.commandType = bytearray([0x02])                        # 2 by default (get), probably 0x01 for fetch
@@ -47,7 +47,7 @@ class LibratoneMessage:
         else: return self.remoteID + self.commandType + self.command + self.commandStatus + self.crc + self.datalen + self.data
     
     # Receive a packet content
-    def set_from_packet(self, packet):
+    def set_from_packet(self, packet:bytearray):
         # Extra `to-byte` because I don't manage it that well
         # slice(start, end) with end the OUTBOUND limit (= not included)
         self.remoteID = packet[slice(0,2)]
@@ -60,23 +60,20 @@ class LibratoneMessage:
         self.data = packet[slice(10,len(packet))]
         return self.command, self.data
     
-    # Set a commandType with an incoming int
-    def set_commandType(self, commandType):
+    def set_commandType(self, commandType:int):
         self.commandType = commandType.to_bytes(1, 'big')
         return True
 
-    # Set a command with an incoming int
-    def set_command(self, command):
+    def set_command(self, command:int):
         self.command = command.to_bytes(2, 'big')
         return True
 
-    # Set a commandStatus with an incoming int
-    def set_commandStatus(self, commandStatus):
+    def set_commandStatus(self, commandStatus:int):
         self.commandStatus = commandStatus.to_bytes(2, 'big')
         return True
 
     # Set a data content along with the correct dataLen
-    def set_data(self, data):
+    def set_data(self, data:bytearray):
         self.datalen = len(data).to_bytes(2, 'big')
         self.data = bytes(data, "ascii")  
         return True  
