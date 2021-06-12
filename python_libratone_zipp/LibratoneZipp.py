@@ -7,39 +7,44 @@ License: see LICENSE file
 """
 
 import logging
+import time
 import socket
 import threading
 from . import LibratoneMessage
 
-_DEBUG = True # Activate some verbose print()
 _LOGGER = logging.getLogger("LibratoneZipp")
+_LOG_UNKNOWN_PACKET = False                     # Print unknown packet
 
 # Define fixed variables
 STATE_OFF = "OFF"
-
-PLAYSTATUS_PLAY = "PLAY"
-PLAYSTATUS_PAUSE = "PAUSE"
-PLAYSTATUS_STOP = "STOP"
+STATE_PLAY = "PLAY"
+STATE_PAUSE = "PAUSE"
+STATE_STOP = "STOP"
 
 # Define network variables
 _UDP_CONTROL_PORT = 7777                 # Port to send a command
-_UDP_NOTIFICATION_RECEIVE_PORT = 3333    # Port to receive notification from the speaker
-_UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after a notification
 _UDP_RESULT_PORT = 7778                  # Port to receive the result of a command??
+_UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after a notification
+_UDP_NOTIFICATION_RECEIVE_PORT = 3333    # Port to receive notification from the speaker
 
 _UDP_BUFFER_SIZE = 1024
+_KEEPALIVE_CHECK_PERIOD = 30            # Time in second between each keep-alive check 
 
 # Define Zipp commands ID
 _COMMAND_TABLE = {
-    # com.libratone.model.LSSDPNode , fetchAll contain every fonctions 
+    # com.libratone.model.LSSDPNode , fetchAllForWifi contain all useful fonctions 
     'Version': {
         '_get': 5,      # from com.libratone.model.LSSDPNode, fetchVersion
     },
+    'CurrPowerMode': {
+        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - but no reply when asked?
+    },
     'PowerMode': {
-        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - no reply if send
-        '_set': 15,      # from com.libratone.model.LSSDPNode, setPowerMode        
-        'sleep': 20,     # from com.libratone.model.LSSDPNode, triggerDeviceSleep 
-        'wakeup': 00,    # from com.libratone.model.LSSDPNode, triggerDeviceWakeup
+        # Used for sleep timer
+        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode        
+        '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2" + j, j being ??      
+        'sleep': 20,    # from com.libratone.model.LSSDPNode, triggerDeviceSleep 
+        'wakeup': 00,   # from com.libratone.model.LSSDPNode, triggerDeviceWakeup
     },
     'PlayControl': {
         '_set': 40,     # # from com.libratone.model.LSSDPNode, setPlayControl
@@ -73,8 +78,8 @@ _COMMAND_TABLE = {
         },
     },
     'Voicing': {
-        '_set': 518,    # from com.libratone.model.LSSDPNode, setVoicing
         '_get': 516,    # from com.libratone.model.LSSDPNode, fetchVoicing
+        '_set': 518,    # from com.libratone.model.LSSDPNode, setVoicing
         # from com.libratone.enums.Voicing - more voicings are defined (extra bass, enhanced treble, smart) but those aren't accessible to the Libratone Zipp 1
         'neutral': {
             '_data': 'V100',
@@ -120,6 +125,17 @@ _COMMAND_TABLE = {
     },
 }
 
+# Check if host is up
+def host_up(host, port=80):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((host, port))
+    except socket.error:
+        return False
+    sock.close()
+    del sock
+    return True
+
 class LibratoneZipp:
     """Representing a Libratone Zipp device."""
 
@@ -136,12 +152,15 @@ class LibratoneZipp:
         self.version = None
         
         # Active variables
-        self.state = None
         self._voicing_raw = None # V10x-like codes
-        self.voicing = None
         self.volume = None
         self.chargingstatus = None
         self.powermode = None
+
+        # Calculated variables
+        self.state = None                               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
+        self.voicing = None                             # 'name' are used: "Neutral", "Easy Listening", ...
+        self.voicing_list = self.voicing_list_define()
 
         # Network
 
@@ -153,13 +172,26 @@ class LibratoneZipp:
         self._listening_result_flag = True
         self._listening_result_socket, self._listening_result_thread = self._get_new_socket(receive_port=_UDP_RESULT_PORT)
 
+        ## Setup 3rd thread to make regular call to Zipp in order to update status in case of desync
+        self._keepalive_flag = True
+        self._keepalive_thread = threading.Thread(target=self._keepalive_check, args=[])
+        self._keepalive_thread.start()
+
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
     def exit(self):
         self._listening_notification_flag = False
         self.set_control_command(command=_COMMAND_TABLE['Volume']['_set'], data=self.volume)
         self._listening_result_flag = False
         self.get_control_command(command=_COMMAND_TABLE['Version']['_get'])
-        print("Disconnected from Libratone Zipp, waiting for last packet.")
+        self._keepalive_thread = False
+        _LOGGER.info("Disconnected from Libratone Zipp, waiting for last packets.")
+
+    # Do a state_refresh every _KEEPALIVE_CHECK_PERIOD seconds to update self.state
+    def _keepalive_check(self):
+        while(self._keepalive_flag):
+            self.state_refresh()
+            time.sleep(_KEEPALIVE_CHECK_PERIOD)
+        _LOGGER.info("Keep-alive thread closed.")
 
     # Interpret message from Zipp
     def process_zipp_message(self, packet: bytearray):
@@ -168,34 +200,48 @@ class LibratoneZipp:
         command = zipp_message.get_command_int()
         data = zipp_message.data
 
-        if command == 0: print("placeholder to start at 0")
+        if command == 0: pass
         elif command == _COMMAND_TABLE['Voicing']['_get']:
             self._voicing_raw = data.decode()
             self._voicing_update_from_raw()
         elif command == _COMMAND_TABLE['PlayStatus']['_get']:
-            if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = PLAYSTATUS_PLAY
-            elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = PLAYSTATUS_STOP
-            elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = PLAYSTATUS_PAUSE
+            if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
+            elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
+            elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
         elif command == _COMMAND_TABLE['ChargingStatus']['_get']: self.chargingstatus = data.decode()
         elif command == _COMMAND_TABLE['PowerMode']['_get']: self.powermode = data.decode()
         else:
-            try: pretty_data = data.decode()
-            except: pretty_data = data
-            finally: print("\nCOMMAND:", command, "DATA:", pretty_data)
+            if _LOG_UNKNOWN_PACKET:
+                try: pretty_data = data.decode()
+                except: pretty_data = data
+                _LOGGER.info("\nCOMMAND:", command, "DATA:", pretty_data)
+            else: pass
 
     # Wait for a message from the Zipp, start a thread to process it and send an ACK to _UDP_NOTIFICATION_SEND_PORT = 3334
     def listen_incoming_zipp_notification(self, socket, receive_port, ack_port=None):
-        print("Listening incoming Zipp messages on", receive_port)
+        _LOGGER.info("Listening incoming Zipp messages on", receive_port)
         while(self._listening_notification_flag):
             # Wait for new packet; address is the originating IP:port
-            message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
-            thread = threading.Thread(target=self.process_zipp_message, args=[message])
-            thread.start()
+            try:
+                message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
+                thread = threading.Thread(target=self.process_zipp_message, args=[message])
+                thread.start()
 
-            # Send the ack
-            if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (self.host, _UDP_NOTIFICATION_SEND_PORT))
+                # Send the ack
+                if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (self.host, _UDP_NOTIFICATION_SEND_PORT))
+            except:
+                _LOGGER.info("Connection closed! Port", receive_port)
+                self.state = STATE_OFF
+                self.version = None
+                self._voicing_raw = None 
+                self.volume = None
+                self.chargingstatus = None
+                self.powermode = None
+                self.voicing = None
+                while(self.state == STATE_OFF):
+                    time.sleep(_KEEPALIVE_CHECK_PERIOD)
 
     # Create a socket, start a thread to manage incoming messages from receive_port and send a trigger to trigger_port
     def _get_new_socket(self, receive_port, trigger_port=None, ack_port=None):
@@ -218,15 +264,12 @@ class LibratoneZipp:
 
         except ConnectionError as connection_error:
             _LOGGER.warning("Connection error: %s", connection_error)
-            self.state = STATE_OFF
             return None
         except socket.gaierror as socket_gaierror:
             _LOGGER.warning("Address-related error: %s", socket_gaierror)
-            self.state = STATE_OFF
             return None
         except socket.error as socket_error:
             _LOGGER.warning("Socket error: %s", socket_error)
-            self.state = STATE_OFF
             return None
 
     # Send a defined message to the zipp at a defined port
@@ -244,8 +287,7 @@ class LibratoneZipp:
             if resp == 0:
                 self._listening_notification_socket.close()
                 self._listening_notification_socket = None
-                self.state = STATE_OFF
-                _LOGGER.warning("Send fail, disconnecting from Libratone Zipp")
+                _LOGGER.warning("Send fail, disconnecting socket")
             else:
                 return True
 
@@ -270,18 +312,24 @@ class LibratoneZipp:
     def volume_get(self): return self.get_control_command(command=_COMMAND_TABLE['Volume']['_get'])
     def voicing_get(self): return self.get_control_command(command=_COMMAND_TABLE['Voicing']['_get'])
     def chargingstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['ChargingStatus']['_get'])
-
-    # TODO implement all relevant in com.libratone.v3.model.LSSDPNode fetchAllForWifi()
+    def playstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['PlayStatus']['_get'])
     
-    # Call all get functions above
+    # Call all *get* functions above
     def get_all(self):
         self.version_get()
         self.chargingstatus_get()
         self.volume_get()
         self.voicing_get()
+        self.playstatus_get()
+
+    # Refresh the state of the Zipp
+    def state_refresh(self):
+        if host_up(self.host):
+            self.get_all()
+        else: self.state = STATE_OFF
 
     # Send PlayControl commands
-    def _playcontrol(self, action):
+    def _playcontrol_set(self, action):
         # Possible actions are defined in _COMMAND_TABLE['PlayControl']
         try:
             self.set_control_command(_COMMAND_TABLE['PlayControl']['_set'], _COMMAND_TABLE['PlayControl'][action])
@@ -289,14 +337,14 @@ class LibratoneZipp:
         except:
             _LOGGER.warning("Error: " + action + " command not sent.")
             return False
-    def play(self): return self._playcontrol('play')
-    def pause(self): return self._playcontrol('pause')
-    def stop(self): return self._playcontrol('stop')
-    def next(self): return self._playcontrol('next')
-    def prev(self): return self._playcontrol('prev')
+    def play(self): return self._playcontrol_set('play')
+    def pause(self): return self._playcontrol_set('pause')
+    def stop(self): return self._playcontrol_set('stop')
+    def next(self): return self._playcontrol_set('next')
+    def prev(self): return self._playcontrol_set('prev')
 
     # Send PowerMode commands
-    def _powermode(self, action): 
+    def _powermode_set(self, action): 
          # Possible actions are defined in _COMMAND_TABLE['PowerMode']
         try:
             self.set_control_command(_COMMAND_TABLE['PowerMode']['_set'], _COMMAND_TABLE['PowerMode'][action])
@@ -304,18 +352,17 @@ class LibratoneZipp:
         except:
             _LOGGER.warning("Error: " + action + " command not sent.")
             return False
-    def sleep(self): return self._powermode('sleep')
-    def wakeup(self): return self._powermode('wakeup')
+    def sleep(self): return self._powermode_set('sleep')
+    def wakeup(self): return self._powermode_set('wakeup')
 
     # Send Player-Favorite command
-    # TODO To fix
     def favorite_play(self, favourite_id):
         if int(favourite_id) < 1 or int(favourite_id) > 5:
             _LOGGER.warning("Error: favorite command must be within 1 and 5.")
             return False
         try:
-            if isinstance(favourite_id, str): self.set_control_command(_COMMAND_TABLE['Player']['_set'], _COMMAND_TABLE['Player']['favorite'][favourite_id])
-            else: self.set_control_command(_COMMAND_TABLE['Player']['_set'], _COMMAND_TABLE['Player']['favorite'][str(favourite_id)])
+            if not isinstance(favourite_id, str): favourite_id = str(favourite_id)
+            self.set_control_command(_COMMAND_TABLE['Player']['_set'], _COMMAND_TABLE['Player']['favorite'][favourite_id])
             return True
         except:
             _LOGGER.warning("Error: favorite command not sent.")
@@ -324,18 +371,29 @@ class LibratoneZipp:
     # Send Voicing command
     def voicing_set(self, voicing_id:str):
         try:
-            self.set_control_command(_COMMAND_TABLE['Voicing']['_set'], _COMMAND_TABLE['Voicing'][voicing_id]['_data'])
+            for item in _COMMAND_TABLE['Voicing']:
+                if item != '_set' and item != '_get' and voicing_id == _COMMAND_TABLE['Voicing'][item]['name']:
+                    self.set_control_command(_COMMAND_TABLE['Voicing']['_set'], _COMMAND_TABLE['Voicing'][item]['_data'])
+                    break
             return True
         except:
             _LOGGER.warning("Error: voicing command not sent.")
             return False
+
+    # Send list of all voicing in "Name" format
+    def voicing_list_define(self):
+        list = []
+        for item in _COMMAND_TABLE['Voicing']:
+            if item != '_set' and item != '_get':
+                list.append(_COMMAND_TABLE['Voicing'][item]['name'])
+        return list
 
     # Transform raw voicing (V10x codes) into 
     def _voicing_update_from_raw(self):
         for item in _COMMAND_TABLE['Voicing']:
             if item != '_set' and item != '_get':
                 if self._voicing_raw == _COMMAND_TABLE['Voicing'][item]['_data']:
-                    self.voicing = item
+                    self.voicing = _COMMAND_TABLE['Voicing'][item]['name']
                     return True
 
     # Send Volume command
