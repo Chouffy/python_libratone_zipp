@@ -4,89 +4,54 @@ This aims to control a Libratone Zipp speaker with a Python library, potentially
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
-Note: current development is in the `dev` branch!
-
 ## Usage
 
-Functions return `True` if they are successful
-
-Command | Action
--|-
-**Initialization**
-`from python_libratone_zipp import LibratoneZipp` | Import the library
-`zipp = LibratoneZipp('192.168.1.99', "Zipp")` | Instantiate the LibratoneZipp class
-**Properties**
-`zipp.name` | Name of the speaker
-`zipp.host` | IP address of the speaker
-**Playback commands**
-`zipp.state`| State of the speaker - see below
-`zipp.play()` | Play command
-`zipp.pause()` | Pause command
-`zipp.stop()` | Stop command
-`zipp.next()` | Next track command
-`zipp.prev()` | Previous track command
-**Voicing (sound mode) commands**
-`zipp.voicing` | Current voicing
-`zipp.voicing_list` | List of all `<voicing_id>`
-`zipp.voicing_set(<voicing_id>)` | Set the speaker to `<voicing_id>`
-
-### States
-
-Right now, state are calculated and not fetched from the device. Some of them (sleep) are not even used.
-
-State variable | Variable content | Description
--|-|-
-`STATE_OFF` | `"OFF"` | The speaker is off or cannot be reached
-`STATE_SLEEP` | `"SLEEP"` | The speaker is in sleep mode (nightingale is off)
-`STATE_IDLE` | `"IDLE"` | The speaker is active but don't play anything
-`STATE_PLAY` | `"PLAY"` | The speaker is playing
-`STATE_PAUSE` | `"PAUSE"` | The speaker is on pause - Not sure if it's a "true" state
+See example in `CLI.py`
 
 ## Roadmap
 
-Currently trying to understand the communication between the Libratone Android app and the speaker.
+Nothing is guaranteed here 😁
 
 ### Module improvement
 
-* [ ] Clean text variables, declare variable on top instead of using text like "play"
-* [ ] Create a client
+* [x] Clean text variables, declare variable on top instead of using text like "play"
+* [x] Create a client
 * [ ] Use discovery method instead of fixed IP
 
 ### Functionality coverage
 
 * v1.0
     * [x] Set basic playback status: play, pause, stop, next, prev
-    * [x] Set a Favorite
+    * [x] Play a Favorite
     * [x] Calculate state - But this is not use in HA
     * [x] Make it work with Home Assistant
     * [x] Publish on PyPi
 * v1.1
     * [x] Set a Voicing
 * v2.0
-    * [ ] Retrieve basic playback status: play, pause, stop, next, prev - **WIP in `dev` branch**
-    * [ ] Set volume
+    * [x] Retrieve basic playback status: play, pause, stop, next, prev
+    * [x] Set volume
+    * [x] Retrieve volume
+    * [x] Set to immediate standby
+    * [x] Retrieve and set Voicing
+    * [x] Retrieve current firmware, IP, serial number
+    * [x] Retrieve actual speaker state (approximately)
 * v3.0
     * [ ] Make the module async
 
 Other functionalities:
 
-* Volume
-    * [ ] Set volume
-    * [ ] Retrieve volume
 * Current Playback info
     * [ ] Retrieve current playback source
     * [ ] Retrieve current title
     * [ ] Retrieve media type: bluetooth, spotify, aux, radio, ...
 * Standby
-    * [ ] Set to immediate standby
     * [ ] Set a standby timer
     * [ ] Retrieve a standby timer
 * Voicing & Room Setting
-    * [ ] Retrieve current Voicing
     * [ ] Set Room Setting
     * [ ] Retrieve current Room Setting
 * Favorites
-    * [ ] Play a favorite
     * [ ] Set a Favorite
 * Extended current playback info
     * [ ] Set extended playback status: shuffle, repeat
@@ -98,7 +63,7 @@ Other functionalities:
     * [ ] Retrieve speaker color
     * [ ] Set speaker name
     * [ ] Set speaker color
-    * [ ] Retrieve current firmware, IP, serial number
+    * [ ] Retrieve current IP, serial number
     * [ ] Retrieve current battery and AC information
 * Network
     * [ ] Retrieve current wifi information
