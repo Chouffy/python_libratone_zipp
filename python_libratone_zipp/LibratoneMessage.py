@@ -73,7 +73,8 @@ class LibratoneMessage:
         return True
 
     # Set a data content along with the correct dataLen
-    def set_data(self, data:bytearray):
+    def set_data(self, data):
+        if isinstance(data, int): data = str(data)
         self.datalen = len(data).to_bytes(2, 'big')
         self.data = bytes(data, "ascii")  
         return True  
