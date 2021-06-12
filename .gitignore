@@ -1,6 +1,6 @@
 __pycache__/
 build/
 dist/
-user/
 *.egg-info/
 ltex.*
+.vscode/
