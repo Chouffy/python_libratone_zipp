@@ -9,10 +9,8 @@ from python_libratone_zipp import LibratoneZipp
 
 zipp = LibratoneZipp('192.168.1.31')
 
-zipp.get_all()
-
 while True:
-    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, play_favorite, voicing, volume, info, exit? ")
+    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, voicing_list, volume, info, exit? ")
 
     if user_choice == "play":
         zipp.play()
@@ -29,13 +27,15 @@ while True:
     elif user_choice == "wakeup":
         zipp.wakeup()
 
-    elif user_choice == "play_favorite":
+    elif user_choice == "fav_play":
         user_choice = input("Input favorite ID: 1, 2, ... 5? ")
         zipp.favorite_play(user_choice)
 
     elif user_choice == "voicing":
-        user_choice = input("Input voicing ID: neutral, easy, ...? ")
+        user_choice = input("Input voicing ID: Neutral, Easy Listening, ...? ")
         zipp.voicing_set(user_choice)
+    elif user_choice == "voicing_list":
+        print(zipp.voicing_list())
 
     elif user_choice == "volume":
         user_choice = input("Input volume 0...100? ")
