@@ -12,7 +12,7 @@ zipp = LibratoneZipp('192.168.1.31')
 zipp.get_all()
 
 while True:
-    user_choice = input("Input your command: play, pause, stop, next, prev, play_favorite, voicing, volume, info, exit? ")
+    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, play_favorite, voicing, volume, info, exit? ")
 
     if user_choice == "play":
         zipp.play()
@@ -24,6 +24,10 @@ while True:
         zipp.next()
     elif user_choice == "prev":
         zipp.prev()
+    elif user_choice == "sleep":
+        zipp.sleep()
+    elif user_choice == "wakeup":
+        zipp.wakeup()
 
     elif user_choice == "play_favorite":
         user_choice = input("Input favorite ID: 1, 2, ... 5? ")
@@ -38,9 +42,12 @@ while True:
         zipp.volume_set(user_choice)
 
     elif user_choice == "info":
-        if zipp.voicing != None: print("Voicing: " + zipp.voicing)
-        if zipp.state   != None: print("State: " + zipp.state)
-        if zipp.volume  != None: print("Volume: " + zipp.volume)
+        if zipp.version != None: print("Version:", zipp.version)
+        if zipp.voicing != None: print("Voicing:", zipp.voicing)
+        if zipp.state   != None: print("State:", zipp.state)
+        if zipp.volume  != None: print("Volume:", zipp.volume)
+        if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
+        if zipp.powermode  != None: print("Power mode:", zipp.powermode)
         
     elif user_choice == "exit":
         break
