@@ -10,7 +10,7 @@ See example in `CLI.py`
 
 ## Roadmap
 
-Nothing is guaranteed here 😁
+Nothing is guaranteed here!
 
 ### Module improvement
 
