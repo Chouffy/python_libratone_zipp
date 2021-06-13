@@ -16,6 +16,7 @@ Nothing is guaranteed here!
 
 * [x] Clean text variables, declare variable on top instead of using text like "play"
 * [x] Create a client
+* [ ] Handle exit properly - currently threads can be locking
 * [ ] Use discovery method instead of fixed IP
 
 ### Functionality coverage
