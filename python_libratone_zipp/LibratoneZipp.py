@@ -221,7 +221,7 @@ class LibratoneZipp:
 
     # Wait for a message from the Zipp, start a thread to process it and send an ACK to _UDP_NOTIFICATION_SEND_PORT = 3334
     def listen_incoming_zipp_notification(self, socket, receive_port, ack_port=None):
-        _LOGGER.info("Listening incoming Zipp messages on", receive_port)
+        _LOGGER.info("Listening incoming Zipp messages on %s", str(receive_port))
         while(self._listening_notification_flag):
             # Wait for new packet; address is the originating IP:port
             try:
@@ -232,7 +232,7 @@ class LibratoneZipp:
                 # Send the ack
                 if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (self.host, _UDP_NOTIFICATION_SEND_PORT))
             except:
-                _LOGGER.info("Connection closed! Port", receive_port)
+                _LOGGER.info("Connection closed! Port %s", str(receive_port))
                 self.state = STATE_OFF
                 self.version = None
                 self._voicing_raw = None 
@@ -335,7 +335,7 @@ class LibratoneZipp:
             self.set_control_command(_COMMAND_TABLE['PlayControl']['_set'], _COMMAND_TABLE['PlayControl'][action])
             return True
         except:
-            _LOGGER.warning("Error: " + action + " command not sent.")
+            _LOGGER.warning("Error: %s command not sent.", action)
             return False
     def play(self): return self._playcontrol_set('play')
     def pause(self): return self._playcontrol_set('pause')
@@ -350,7 +350,7 @@ class LibratoneZipp:
             self.set_control_command(_COMMAND_TABLE['PowerMode']['_set'], _COMMAND_TABLE['PowerMode'][action])
             return True
         except:
-            _LOGGER.warning("Error: " + action + " command not sent.")
+            _LOGGER.warning("Error: %s command not sent.", action)
             return False
     def sleep(self): return self._powermode_set('sleep')
     def wakeup(self): return self._powermode_set('wakeup')
