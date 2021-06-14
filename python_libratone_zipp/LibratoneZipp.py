@@ -139,13 +139,12 @@ def host_up(host, port=80):
 class LibratoneZipp:
     """Representing a Libratone Zipp device."""
 
-    # host is IP of Zipp, localhost is local IP
-    def __init__(self, host, localhost, name="Zipp"):
+    # host is IP of Zipp
+    def __init__(self, host, name="Zipp"):
 
         # TODO Publish all variables
 
         # Configuration set by class client
-        self._localHost = localhost
         self.host = host
         self.name = name
         
@@ -254,7 +253,7 @@ class LibratoneZipp:
             _new_thread.start()
 
             # Set up a listening socker
-            _new_socket.bind((self._localHost, receive_port))
+            _new_socket.bind(("", receive_port))
 
             if trigger_port != None:
                 # Send trigger
