@@ -174,7 +174,7 @@ class LibratoneZipp:
 
         ## Setup 3rd thread to make regular call to Zipp in order to update status in case of desync
         self._keepalive_flag = True
-        self._keepalive_thread = threading.Thread(target=self._keepalive_check, args=[])
+        self._keepalive_thread = threading.Thread(target=self._keepalive_check, name="Zipp_keepalive", args=[])
         self._keepalive_thread.start()
 
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
@@ -226,7 +226,7 @@ class LibratoneZipp:
             # Wait for new packet; address is the originating IP:port
             try:
                 message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
-                thread = threading.Thread(target=self.process_zipp_message, args=[message])
+                thread = threading.Thread(target=self.process_zipp_message, name="Process_Zipp_Message", args=[message])
                 thread.start()
 
                 # Send the ack
@@ -249,7 +249,7 @@ class LibratoneZipp:
             _new_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
             # Instanciate a thread to manage incoming messages
-            _new_thread = threading.Thread(target=self.listen_incoming_zipp_notification, args=[_new_socket, receive_port, ack_port])
+            _new_thread = threading.Thread(target=self.listen_incoming_zipp_notification,  name="Listen_incoming_"+str(receive_port), args=[_new_socket, receive_port, ack_port])
             _new_thread.start()
 
             # Set up a listening socker
