@@ -6,7 +6,8 @@ Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.or
 
 ## Usage
 
-See example in `CLI.py`
+See example in `CLI.py`.
+You have to be able to listen to `3333/udp` and `7778/udp`!
 
 ## Roadmap
 
