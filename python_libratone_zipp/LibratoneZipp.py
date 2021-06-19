@@ -66,9 +66,9 @@ _COMMAND_TABLE = {
         '_get': 64,     # from com.libratone.model.LSSDPNode, fetchVolume
         '_set': 64,     # from com.libratone.model.LSSDPNode, setVolume - expect data with volume 0...100
     },
-    'DeviceName': {
+    'Name': {
         '_get': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName
-        '_set': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName - expect data with wished device name
+        '_set': 90,     # from com.libratone.model.LSSDPNode, setName - expect data with wished device name
     },
     'Player': {
         '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer - see below for data
@@ -212,7 +212,7 @@ class LibratoneZipp:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
             elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
-        elif command == _COMMAND_TABLE['DeviceName']['_get']: self.name = data.decode()
+        elif command == _COMMAND_TABLE['Name']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
         elif command == _COMMAND_TABLE['ChargingStatus']['_get']: self.chargingstatus = data.decode()
@@ -314,7 +314,7 @@ class LibratoneZipp:
 
     # Get functions to get status - assuming that the speaker will answer it
     def version_get(self): return self.get_control_command(command=_COMMAND_TABLE['Version']['_get'])
-    def name_get(self): return self.get_control_command(command=_COMMAND_TABLE['DeviceName']['_get'])
+    def name_get(self): return self.get_control_command(command=_COMMAND_TABLE['Name']['_get'])
     def volume_get(self): return self.get_control_command(command=_COMMAND_TABLE['Volume']['_get'])
     def voicing_get(self): return self.get_control_command(command=_COMMAND_TABLE['Voicing']['_get'])
     def chargingstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['ChargingStatus']['_get'])
@@ -349,6 +349,10 @@ class LibratoneZipp:
     def stop(self): return self._playcontrol_set('stop')
     def next(self): return self._playcontrol_set('next')
     def prev(self): return self._playcontrol_set('prev')
+
+    # Define a name
+    def name_set(self, name:str): return self.set_control_command(command=_COMMAND_TABLE['Name']['_set'], data=str(name))
+    
 
     # Send PowerMode commands
     def _powermode_set(self, action): 
@@ -416,5 +420,3 @@ class LibratoneZipp:
         except:
             _LOGGER.warning("Error: volume command not sent.")
             return False
-
-    

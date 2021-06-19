@@ -10,7 +10,7 @@ from python_libratone_zipp import LibratoneZipp
 zipp = LibratoneZipp(host='192.168.1.31')
 
 while True:
-    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, voicing_list, volume, info, exit? ")
+    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, voicing_list, volume, name_set, info, exit? ")
 
     if user_choice == "play":
         zipp.play()
@@ -40,6 +40,10 @@ while True:
     elif user_choice == "volume":
         user_choice = input("Input volume 0...100? ")
         zipp.volume_set(user_choice)
+
+    elif user_choice == "name_set":
+        user_choice = input("Input name? ")
+        zipp.name_set(user_choice)
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)

@@ -49,7 +49,7 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Retrieve current firmware
     * [x] Retrieve speaker name
     * [ ] Retrieve speaker color
-    * [ ] Set speaker name
+    * [x] Set speaker name
     * [ ] Set speaker color
     * [ ] Retrieve current IP, serial number
     * [ ] Retrieve current battery and AC information
