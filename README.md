@@ -47,7 +47,7 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [ ] Retrieve current source
 * Speaker configuration
     * [x] Retrieve current firmware
-    * [ ] Retrieve speaker name
+    * [x] Retrieve speaker name
     * [ ] Retrieve speaker color
     * [ ] Set speaker name
     * [ ] Set speaker color
