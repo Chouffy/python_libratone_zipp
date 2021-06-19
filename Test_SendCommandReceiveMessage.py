@@ -4,7 +4,6 @@ from python_libratone_zipp import LibratoneZipp, LibratoneMessage
 
 host = '192.168.1.31'
 
-
 _UDP_BUFFER_SIZE = 1024
 _UDP_CONTROL_PORT = 7777                 # Port to send a command
 _UDP_RESULT_PORT = 7778                  # Port to receive the result of a command??
@@ -20,7 +19,6 @@ def process_zipp_message(packet: bytearray, receive_port):
     try: pretty_data = data.decode()
     except: pretty_data = data
     print("COMMAND:", command, "DATA:", pretty_data, "PORT:", receive_port)
-
 def listen_incoming_zipp_notification(socket, receive_port, ack_port=None):
     while True:
         message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
@@ -28,19 +26,20 @@ def listen_incoming_zipp_notification(socket, receive_port, ack_port=None):
         thread.start()
         # Send the ack
         if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (host, _UDP_NOTIFICATION_SEND_PORT))
+def thread_setup():
+    # Thread for _UDP_RESULT_PORT
+    my_socket_UDP_RESULT_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    thread_UDP_RESULT_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_RESULT_PORT, _UDP_RESULT_PORT, _UDP_CONTROL_PORT])
+    thread_UDP_RESULT_PORT.start()
+    my_socket_UDP_RESULT_PORT.bind(("", _UDP_RESULT_PORT))
 
-# Thread for _UDP_RESULT_PORT
-my_socket_UDP_RESULT_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-thread_UDP_RESULT_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_RESULT_PORT, _UDP_RESULT_PORT, _UDP_CONTROL_PORT])
-thread_UDP_RESULT_PORT.start()
-my_socket_UDP_RESULT_PORT.bind(("", _UDP_RESULT_PORT))
+    # Thread for _UDP_NOTIFICATION_RECEIVE_PORT
+    my_socket_UDP_NOTIFICATION_RECEIVE_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    thread_UDP_NOTIFICATION_RECEIVE_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_SEND_PORT])
+    thread_UDP_NOTIFICATION_RECEIVE_PORT.start()
+    my_socket_UDP_NOTIFICATION_RECEIVE_PORT.bind(("", _UDP_NOTIFICATION_RECEIVE_PORT))
 
-# Thread for _UDP_NOTIFICATION_RECEIVE_PORT
-my_socket_UDP_NOTIFICATION_RECEIVE_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-thread_UDP_NOTIFICATION_RECEIVE_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_SEND_PORT])
-thread_UDP_NOTIFICATION_RECEIVE_PORT.start()
-my_socket_UDP_NOTIFICATION_RECEIVE_PORT.bind(("", _UDP_NOTIFICATION_RECEIVE_PORT))
-
+thread_setup()
 
 # SET = port=7777, command, data
 # my_ba = LibratoneMessage.LibratoneMessage(command=90, data="Zipp")
