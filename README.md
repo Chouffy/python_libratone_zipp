@@ -4,6 +4,8 @@ This aims to control a Libratone Zipp speaker with a Python library, potentially
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
+Test with Libratone Zipp 1, firmware 809.
+
 ## Usage
 
 See example in `CLI.py`.  
@@ -35,8 +37,9 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
 * Standby
     * [x] Retrieve actual speaker state
     * [x] Set to immediate standby and wakeup
-    * [ ] Set a standby timer
-    * [ ] Retrieve a standby timer
+    * [x] Set a standby timer
+    * [x] Retrieve the defined duration of the standby timer
+    * [ ] Calculate the actual standby timer
 * Voicing & Room Setting
     * [x] Set a Voicing
     * [x] Retrieve active Voicing
@@ -67,6 +70,19 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [ ] Set Wi-Fi configuration
 * Multi-room
     * [ ] Implement SoundSpace Link
+
+### Unimplemented commands
+
+Following commands where identified but not implemented and/or implemented but not processed due to lack on `data` investigation.
+
+From Android application, `com.libratone.model.LSSDPNode`:
+command|function|notes
+-|-|-
+10  | fetchSourceInfo
+103 | fetchDeviceState
+520 | fetchMuteStatus|Implemented but not processed due
+1284| fetchChargingStatus|Implemented but not processed
+1285| fetchPrivateMode
 
 ## Acknowledgment
 
