@@ -125,6 +125,8 @@ _COMMAND_TABLE = {
         }, 
     },
     'Room': {
+        '_get': 517,    # from com.libratone.model.LSSDPNode, fetchFullroom - will return a voicingId defined in getAll like "neutral"
+        '_set': 519,    # from com.libratone.model.LSSDPNode, setFullRoom - expect a voicingId defined in getAll like "neutral"
         '_getAll': 525, # from com.libratone.model.LSSDPNode, fetchAllFullRoom - will return a JSON like [{"description":"Basic neutral setting","name":"Neutral","voicingId":"neutral"}, ...]
     },
     'ChargingStatus': {
@@ -166,6 +168,9 @@ class LibratoneZipp:
         self.chargingstatus = None
         self.powermode = None
 
+        self._room_raw = None
+        self.room = None
+
         # Calculated variables
         self.state = None                               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
         self.voicing = None                             # 'name' are used: "Neutral", "Easy Listening", ...
@@ -204,16 +209,21 @@ class LibratoneZipp:
         _LOGGER.info("Keep-alive thread closed.")
 
     # Interpret message from Zipp
-    def process_zipp_message(self, packet: bytearray):
+    def process_zipp_message(self, packet: bytearray, receive_port):
         
         zipp_message = LibratoneMessage.LibratoneMessage(packet=packet)
         command = zipp_message.get_command_int()
         data = zipp_message.data
 
+        # TODO Implement a skip of data update if there's already data
+
         if command == 0: pass
         elif command == _COMMAND_TABLE['Voicing']['_get']:
             self._voicing_raw = data.decode()
             self._voicing_update_from_raw()
+        elif command == _COMMAND_TABLE['Room']['_get']:
+            self._room_raw = data.decode()
+            self._room_update_from_raw()
         elif command == _COMMAND_TABLE['Room']['_getAll']:
             self._room_list_raw = data.decode()
             self._room_list_update_from_raw()
@@ -230,7 +240,7 @@ class LibratoneZipp:
             if _LOG_UNKNOWN_PACKET:
                 try: pretty_data = data.decode()
                 except: pretty_data = data
-                _LOGGER.info("\nCOMMAND:", command, "DATA:", pretty_data)
+                _LOGGER.info("\nCommand:", command, "Data:", pretty_data, "Port:", receive_port)
             else: pass
 
     # Wait for a message from the Zipp, start a thread to process it and send an ACK to _UDP_NOTIFICATION_SEND_PORT = 3334
@@ -240,7 +250,7 @@ class LibratoneZipp:
             # Wait for new packet; address is the originating IP:port
             try:
                 message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
-                thread = threading.Thread(target=self.process_zipp_message, name="Process_Zipp_Message", args=[message])
+                thread = threading.Thread(target=self.process_zipp_message, name="Process_Zipp_Message", args=[message, receive_port])
                 thread.start()
 
                 # Send the ack
@@ -329,20 +339,28 @@ class LibratoneZipp:
     def chargingstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['ChargingStatus']['_get'])
     def playstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['PlayStatus']['_get'])
     def room_getall(self): return self.get_control_command(command=_COMMAND_TABLE['Room']['_getAll'])
+    def room_get(self): return self.get_control_command(command=_COMMAND_TABLE['Room']['_get'])
     
-    # Call all *get* functions above
+    # Call all *get* functions above, except fixed values
     def get_all(self):
-        self.version_get()
-        self.name_get()
         self.chargingstatus_get()
         self.volume_get()
         self.voicing_get()
         self.playstatus_get()
+        self.room_get()
+
+    # Call all *get* for values that are fixed for the lifecycle 
+    def get_all_fixed_for_lifecycle(self):
+        self.version_get()
+        self.name_get()
         self.room_getall()
 
     # Refresh the state of the Zipp
     def state_refresh(self):
         if host_up(self.host):
+            # If the Zipp was not in a "controlled" state, refresh also lifecycle variables
+            if self.state != STATE_PLAY and self.state != STATE_PAUSE and self.state != STATE_STOP:
+                self.get_all_fixed_for_lifecycle()
             self.get_all()
         else: self.state = STATE_OFF
 
@@ -401,6 +419,18 @@ class LibratoneZipp:
             _LOGGER.warning("Error: voicing command not sent.")
             return False
 
+    # Send Room command
+    def room_set(self, room_name:str):
+        try:
+            for item in self._room_list_raw:
+                if room_name == item['name']:
+                    self.set_control_command(command=_COMMAND_TABLE['Room']['_set'], data=item['voicingId'])
+                    break
+            return True
+        except:
+            _LOGGER.warning("Error: voicing command not sent.")
+            return False
+
     # Send list of all voicing in "Name" format
     def voicing_list_define(self):
         list = []
@@ -409,12 +439,13 @@ class LibratoneZipp:
                 list.append(_COMMAND_TABLE['Voicing'][item]['name'])
         return list
 
-    # Transform raw voicing (V10x codes) into a list with only voicing names
+    # Transform raw voicing (V10x codes) into a human-readable code ("Name")
     def _voicing_update_from_raw(self):
         for item in _COMMAND_TABLE['Voicing']:
             if item != '_set' and item != '_get':
                 if self._voicing_raw == _COMMAND_TABLE['Voicing'][item]['_data']:
                     self.voicing = _COMMAND_TABLE['Voicing'][item]['name']
+                    # TODO Remove continue if even if value has been found
         return True
 
     # Transform raw all room list (JSON) into a list with only room names
@@ -427,6 +458,18 @@ class LibratoneZipp:
             return True
         except:
             self.room_list = None
+            return False
+
+    # Transform raw room ("neutral" name) into a list with only voicing names
+    def _room_update_from_raw(self):
+        try:
+            for item in self._room_list_raw:
+                if self._room_raw == item['voicingId']:
+                    self.room = item['name']
+                    break
+            return True
+        except:
+            self.room = None
             return False
 
     # Send Volume command

@@ -24,14 +24,16 @@ while True:
     elif user_choice == "name_set": zipp.name_set(input("Input device name? "))
 
     elif user_choice == "voicing":
-        print("List of voicing:")
+        print("\nList of voicing:")
         print(*zipp.voicing_list, sep= ", ")
-        zipp.voicing_set(input("Input voicing:"))
+        if zipp.voicing != None: print("Current voicing:", zipp.voicing)
+        zipp.voicing_set(input("\nInput voicing name, not ID: "))
 
     elif user_choice == "room":
-        print("List of room:")
+        print("\nList of room:")
         print(*zipp.room_list, sep= ", ")
-        zipp.room_set(input("Input room setting:"))
+        if zipp.room != None: print("Current room:", zipp.room)
+        zipp.room_set(input("\nInput room setting name, not ID: "))
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)
