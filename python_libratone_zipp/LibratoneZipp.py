@@ -117,6 +117,9 @@ _COMMAND_TABLE = {
     'SignalStrength': {
         '_get': 529     # from com.libratone.model.LSSDPNode, fetchSignalStrength - answer "-86,-42,5/5" for instance
     },
+    'SerialNumber': {
+        '_get': 769     # from com.libratone.model.LSSDPNode, fetchSerialNum - answer "1234-A1234567-12-12345" for instance
+    },
     'DeviceColor': {
         '_get': 770,     # from com.libratone.model.LSSDPNode, fetchDeviceColor - answer "1001" for instance for Pepper Black and "2005" for Sangria
         '_set': 771     # from com.libratone.model.LSSDPNode, setDeviceColor - answer "1001" for instance for Pepper Black and "2005" for Sangria
@@ -152,6 +155,7 @@ class LibratoneZipp:
         # Variables fixed for the lifecycle
         self.version = None
         self.name = None
+        self.serialnumber = None
         
         # Active variables
         self.volume = None
@@ -247,6 +251,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['ChargingStatus']['_get']: self.chargingstatus = data.decode()
         elif command == _COMMAND_TABLE['PowerMode']['_get']: self.powermode = data.decode()
         elif command == _COMMAND_TABLE['SignalStrength']['_get']: self.signalstrenght = data.decode()
+        elif command == _COMMAND_TABLE['SerialNumber']['_get']: self.serialnumber = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
@@ -353,6 +358,7 @@ class LibratoneZipp:
     def player_get(self): return self.get_control_command(command=_COMMAND_TABLE['Player']['_get'])
     def signalstrenght_get(self): return self.get_control_command(command=_COMMAND_TABLE['SignalStrength']['_get'])
     def devicecolor_get(self): return self.get_control_command(command=_COMMAND_TABLE['DeviceColor']['_get'])
+    def serialnumber_get(self): return self.get_control_command(command=_COMMAND_TABLE['SerialNumber']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -371,6 +377,7 @@ class LibratoneZipp:
         self.room_getall()
         self.voicing_getall()
         self.devicecolor_get()
+        self.serialnumber_get()
 
     # Refresh the state of the Zipp
     def state_refresh(self):
