@@ -66,6 +66,9 @@ _COMMAND_TABLE = {
         '_get': 64,     # from com.libratone.model.LSSDPNode, fetchVolume
         '_set': 64,     # from com.libratone.model.LSSDPNode, setVolume
     },
+    'DeviceName': {
+        '_get': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName
+    },
     'Player': {
         '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer
         # Favorites, captured:
@@ -208,6 +211,7 @@ class LibratoneZipp:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
             elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
+        elif command == _COMMAND_TABLE['DeviceName']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
         elif command == _COMMAND_TABLE['ChargingStatus']['_get']: self.chargingstatus = data.decode()
@@ -309,6 +313,7 @@ class LibratoneZipp:
 
     # Get functions to get status - assuming that the speaker will answer it
     def version_get(self): return self.get_control_command(command=_COMMAND_TABLE['Version']['_get'])
+    def name_get(self): return self.get_control_command(command=_COMMAND_TABLE['DeviceName']['_get'])
     def volume_get(self): return self.get_control_command(command=_COMMAND_TABLE['Volume']['_get'])
     def voicing_get(self): return self.get_control_command(command=_COMMAND_TABLE['Voicing']['_get'])
     def chargingstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['ChargingStatus']['_get'])
@@ -317,6 +322,7 @@ class LibratoneZipp:
     # Call all *get* functions above
     def get_all(self):
         self.version_get()
+        self.name_get()
         self.chargingstatus_get()
         self.volume_get()
         self.voicing_get()

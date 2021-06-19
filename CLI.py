@@ -43,6 +43,7 @@ while True:
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)
+        if zipp.name != None: print("Name:", zipp.name)
         if zipp.voicing != None: print("Voicing:", zipp.voicing)
         if zipp.state   != None: print("State:", zipp.state)
         if zipp.volume  != None: print("Volume:", zipp.volume)
