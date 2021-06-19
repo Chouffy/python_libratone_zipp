@@ -46,6 +46,7 @@ while True:
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)
+        if zipp.mutestatus != None: print("MuteStatus:", zipp.mutestatus)
         if zipp.serialnumber != None: print("SerialNumber:", zipp.serialnumber)
         if zipp.devicecolor != None: print("DeviceColor:", zipp.devicecolor)
         if zipp.signalstrenght != None: print("SignalStrength:", zipp.signalstrenght)

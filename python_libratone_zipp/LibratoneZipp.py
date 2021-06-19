@@ -114,6 +114,9 @@ _COMMAND_TABLE = {
         '_set': 519,    # from com.libratone.model.LSSDPNode, setFullRoom - expect a voicingId defined in getAll like "neutral"
         '_getAll': 525, # from com.libratone.model.LSSDPNode, fetchAllFullRoom - will return a JSON like [{"description":"Basic neutral setting","name":"Neutral","voicingId":"neutral"}, ...]
     },
+    'MuteStatus': {
+        '_get': 520     # from com.libratone.model.LSSDPNode, fetchMuteStatus - answer "UNMUTE" for instance
+    },
     'SignalStrength': {
         '_get': 529     # from com.libratone.model.LSSDPNode, fetchSignalStrength - answer "-86,-42,5/5" for instance
     },
@@ -163,6 +166,7 @@ class LibratoneZipp:
         self.powermode = None
         self.signalstrenght = None
         self.devicecolor = None
+        self.mutestatus = None
 
         # Active variables as JSON list - see command table
         self._voicing_list_json = None   
@@ -252,6 +256,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['PowerMode']['_get']: self.powermode = data.decode()
         elif command == _COMMAND_TABLE['SignalStrength']['_get']: self.signalstrenght = data.decode()
         elif command == _COMMAND_TABLE['SerialNumber']['_get']: self.serialnumber = data.decode()
+        elif command == _COMMAND_TABLE['MuteStatus']['_get']: self.mutestatus = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
@@ -359,6 +364,7 @@ class LibratoneZipp:
     def signalstrenght_get(self): return self.get_control_command(command=_COMMAND_TABLE['SignalStrength']['_get'])
     def devicecolor_get(self): return self.get_control_command(command=_COMMAND_TABLE['DeviceColor']['_get'])
     def serialnumber_get(self): return self.get_control_command(command=_COMMAND_TABLE['SerialNumber']['_get'])
+    def mutestatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['MuteStatus']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -369,6 +375,7 @@ class LibratoneZipp:
         self.room_get()
         self.player_get()
         self.signalstrenght_get()
+        self.mutestatus_get()
 
     # Call all *get* for values that are fixed for the lifecycle 
     def get_all_fixed_for_lifecycle(self):

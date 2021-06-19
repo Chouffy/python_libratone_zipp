@@ -23,6 +23,7 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Retrieve volume
     * [x] Retrieve current playback source
     * [x] Retrieve current title
+    * [x] Retrieve mute status - but no logic implemented!
 * Playback status with Bluetooth
     * [ ] Retrieve basic playback status: play, pause, stop
     * [ ] Retrieve media type: bluetooth, aux, radio, ...
