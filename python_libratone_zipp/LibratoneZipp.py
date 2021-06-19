@@ -223,6 +223,38 @@ class LibratoneZipp:
         self._keepalive_thread = threading.Thread(target=self._keepalive_check, name="Zipp_keepalive", args=[])
         self._keepalive_thread.start()
 
+
+    # Clean up all defined variables
+    def _cleanup_variables(self):
+        self.version = None
+        self.name = None
+        self.serialnumber = None
+        self._currpowermode = None
+        self._playstatus = None
+        self.volume = None
+        self.batterylevel = None
+        self.chargingstatus = None
+        self.timer = None           
+        self.signalstrenght = None
+        self.devicecolor = None
+        self.mutestatus = None
+        self._voicing_list_json = None   
+        self._room_list_json = None      
+        self._player_json = None
+        self._channel_json = None
+        self.state = None
+        self.room = None
+        self.voicing = None
+        self.room_list = None
+        self.voicing_list = None
+        self.isFromChannel = None
+        self.play_identity = None
+        self.play_preset_available = None
+        self.play_subtitle = None
+        self.play_title = None
+        self.play_token = None
+        self.play_type = None
+
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
     def exit(self):
         self._listening_notification_flag = False
@@ -230,6 +262,7 @@ class LibratoneZipp:
         self._listening_result_flag = False
         self.get_control_command(command=_COMMAND_TABLE['Version']['_get'])
         self._keepalive_thread = False
+        self._cleanup_variables()
         _LOGGER.info("Disconnected from Libratone Zipp, waiting for last packets.")
 
     # Do a state_refresh every _KEEPALIVE_CHECK_PERIOD seconds to update self.state
@@ -300,14 +333,9 @@ class LibratoneZipp:
                 if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (self.host, _UDP_NOTIFICATION_SEND_PORT))
             except:
                 _LOGGER.info("Connection closed! Port %s", str(receive_port))
-                self.state = STATE_OFF
-                self.version = None
-                self._voicing_raw = None 
-                self.volume = None
-                self.chargingstatus = None
-                self.timer = None
-                self.voicing = None
-                while(self.state == STATE_OFF):
+                self.state = STATE_UNKOWN
+                self._cleanup_variables()
+                while(self.state == STATE_UNKOWN):
                     time.sleep(_KEEPALIVE_CHECK_PERIOD)
 
     # Create a socket, start a thread to manage incoming messages from receive_port and send a trigger to trigger_port
