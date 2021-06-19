@@ -8,10 +8,17 @@ Test with Libratone Zipp 1, firmware 809.
 
 ## Usage
 
-See example in `CLI.py`.  
-You have to be able to listen to `3333/udp` and `7778/udp`!
+See example in `CLI.py`. You have to be able to listen to `3333/udp` and `7778/udp`!
+
+Other files:
+
+* `Test_SendCommandReceiveMessage.py` is used to shoot one command for tests purposes.
+* `Test_LibratoneMessage.py` is to check LibratoneMessage class against a real message
 
 ## Functionality coverage
+
+I'm currently happy with this coverage, so don't expect any updates other than maintenance.  
+The only thing I'm very interested is defining Favorites!
 
 * Module
     * [x] Clean text variables, declare variable on top instead of using text like "play"
