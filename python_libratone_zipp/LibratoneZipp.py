@@ -63,7 +63,7 @@ _COMMAND_TABLE = {
     'Timer': {
         # Used for sleep timer
         '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2" + j, j being seconds      
-        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see _powermode_parse for parsing 
+        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see _timer_parse for parsing 
     },
     'PlayControl': {
         '_set': 40,     # # from com.libratone.model.LSSDPNode, setPlayControl - see below for data
@@ -254,7 +254,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['Voicing']['_getAll']: self._voicing_list_update_from_raw(data.decode())
         elif command == _COMMAND_TABLE['Room']['_getAll']: self._room_list_update_from_raw(data.decode())
         elif command == _COMMAND_TABLE['Player']['_get']: self._player_parse(player_data=data.decode())
-        elif command == _COMMAND_TABLE['Timer']['_get']: self.timer = self._powermode_parse(data)
+        elif command == _COMMAND_TABLE['Timer']['_get']: self.timer = self._timer_parse(data)
         elif command == _COMMAND_TABLE['Name']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
@@ -539,7 +539,7 @@ class LibratoneZipp:
             self.play_type = None
 
     # Parse PowerMode timer, return *DEFINED* timer in second, not the actual one which is running!
-    def _powermode_parse(self, powermode_data):
+    def _timer_parse(self, powermode_data):
         if powermode_data == b'': return None
         elif powermode_data[0] == 255: return None  # Always the case when no timer is defined
         elif powermode_data[0] == 50:   # Always when there's an active timer
