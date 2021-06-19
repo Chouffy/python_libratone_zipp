@@ -57,7 +57,8 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Set speaker name
     * [ ] Map out color codes + Set speaker color
     * [x] Retrieve current serial number
-    * [ ] Retrieve current battery and AC information
+    * [x] Retrieve current battery level
+    * [ ] Retrieve AC information
 * Network
     * [ ] Retrieve current IP
     * [ ] Retrieve current Wi-Fi configuration

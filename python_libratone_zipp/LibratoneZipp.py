@@ -91,6 +91,10 @@ _COMMAND_TABLE = {
         '_get': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName
         '_set': 90,     # from com.libratone.model.LSSDPNode, setName - expect data with wished device name
     },
+    'BatteryLevel': {
+        '_get': 256,     # from com.libratone.model.LSSDPNode, fetchBatteryLevel - answer "" on _get, true vale on _get2
+        '_get2': 257,    # Received when BatteryLevel_get is sent - answer "59" for instance
+    },
     'Player': {
         '_get': 278,    # from com.libratone.model.LSSDPNode, fetchPlayer
         '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer - see below for data
@@ -162,6 +166,7 @@ class LibratoneZipp:
         
         # Active variables
         self.volume = None
+        self.batterylevel = None
         self.chargingstatus = None
         self.powermode = None
         self.signalstrenght = None
@@ -258,6 +263,8 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['SerialNumber']['_get']: self.serialnumber = data.decode()
         elif command == _COMMAND_TABLE['MuteStatus']['_get']: self.mutestatus = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
+        elif command == _COMMAND_TABLE['BatteryLevel']['_get'] or command == _COMMAND_TABLE['BatteryLevel']['_get2']:
+            self.batterylevel = data.decode()
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
             else: pass
@@ -365,6 +372,7 @@ class LibratoneZipp:
     def devicecolor_get(self): return self.get_control_command(command=_COMMAND_TABLE['DeviceColor']['_get'])
     def serialnumber_get(self): return self.get_control_command(command=_COMMAND_TABLE['SerialNumber']['_get'])
     def mutestatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['MuteStatus']['_get'])
+    def batterylevel_get(self): return self.get_control_command(command=_COMMAND_TABLE['BatteryLevel']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -376,6 +384,7 @@ class LibratoneZipp:
         self.player_get()
         self.signalstrenght_get()
         self.mutestatus_get()
+        self.batterylevel_get()
 
     # Call all *get* for values that are fixed for the lifecycle 
     def get_all_fixed_for_lifecycle(self):

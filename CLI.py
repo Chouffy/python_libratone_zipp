@@ -57,6 +57,7 @@ while True:
         if zipp.volume  != None: print("Volume:", zipp.volume)
         if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
         if zipp.powermode  != None: print("Power mode:", zipp.powermode)
+        if zipp.batterylevel  != None: print("BatteryLevel:", zipp.batterylevel)
         
     elif user_choice == "exit":
         break
