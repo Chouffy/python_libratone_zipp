@@ -4,7 +4,9 @@ from python_libratone_zipp import LibratoneZipp, LibratoneMessage
 
 host = '192.168.1.31'
 
-_UDP_BUFFER_SIZE = 1024
+_PRINT_EACH_BYTE = False
+
+_UDP_BUFFER_SIZE = 4096
 _UDP_CONTROL_PORT = 7777                 # Port to send a command
 _UDP_RESULT_PORT = 7778                  # Port to receive the result of a command??
 _UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after a notification
@@ -19,6 +21,13 @@ def process_zipp_message(packet: bytearray, receive_port):
     try: pretty_data = data.decode()
     except: pretty_data = data
     print("COMMAND:", command, "DATA:", pretty_data, "PORT:", receive_port)
+
+    if _PRINT_EACH_BYTE:
+        i = 0
+        for item in data:
+            print(data[i])
+            i+=1
+
 def listen_incoming_zipp_notification(socket, receive_port, ack_port=None):
     while True:
         message, address = socket.recvfrom(_UDP_BUFFER_SIZE)
@@ -42,12 +51,11 @@ def thread_setup():
 thread_setup()
 
 # SET = port=7777, command, data
-# my_ba = LibratoneMessage.LibratoneMessage(command=90, data="Zipp")
+# my_ba = LibratoneMessage.LibratoneMessage(command=15, data="20")
 # GET = port=7777, command, data, commandType=1
-my_ba = LibratoneMessage.LibratoneMessage(command=516, commandType=1)
+my_ba = LibratoneMessage.LibratoneMessage(command=515, commandType=1)
 
 # my_ba.print_packet()
-
 
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port_send = _UDP_CONTROL_PORT
