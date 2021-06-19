@@ -23,10 +23,14 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Retrieve volume
     * [x] Retrieve current playback source
     * [x] Retrieve current title
-    * [x] Retrieve media type: bluetooth, spotify, aux, radio, ...
+* Playback status with Bluetooth
+    * [ ] Retrieve basic playback status: play, pause, stop
+    * [ ] Retrieve media type: bluetooth, aux, radio, ...
+    * [ ] Retrieve extended playback status: shuffle, repeat
 * Playback control
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set volume
+    * [ ] Set extended playback status: shuffle, repeat
 * Standby
     * [x] Retrieve actual speaker state
     * [x] Set to immediate standby and wakeup
@@ -43,8 +47,6 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Play a Favorite
     * [ ] Set a Favorite
 * Extended current playback info
-    * [ ] Set extended playback status: shuffle, repeat
-    * [ ] Retrieve extended playback status: shuffle, repeat
     * [ ] Set Source
     * [ ] Retrieve current source
 * Speaker configuration
@@ -56,8 +58,9 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [ ] Retrieve current IP, serial number
     * [ ] Retrieve current battery and AC information
 * Network
-    * [ ] Retrieve current Wi-Fi information
-    * [ ] Set Wi-Fi information
+    * [ ] Retrieve current Wi-Fi configuration
+    * [x] Retrieve current Wi-Fi information
+    * [ ] Set Wi-Fi configuration
 * Multi-room
     * [ ] Implement SoundSpace Link
 
