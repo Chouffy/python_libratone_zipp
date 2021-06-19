@@ -263,8 +263,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['SerialNumber']['_get']: self.serialnumber = data.decode()
         elif command == _COMMAND_TABLE['MuteStatus']['_get']: self.mutestatus = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
-        elif command == _COMMAND_TABLE['BatteryLevel']['_get'] or command == _COMMAND_TABLE['BatteryLevel']['_get2']:
-            self.batterylevel = data.decode()
+        elif command == _COMMAND_TABLE['BatteryLevel']['_get'] or command == _COMMAND_TABLE['BatteryLevel']['_get2']: self.batterylevel = data.decode()
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
             else: pass
