@@ -46,6 +46,7 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Retrieve all Room
 * Favorites
     * [x] Play a Favorite
+    * [x] List configured favorite but no processing (`_channel_json`)
     * [ ] Set a Favorite
 * Extended current playback info
     * [ ] Set Source

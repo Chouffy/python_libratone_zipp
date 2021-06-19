@@ -48,7 +48,7 @@ _UDP_RESULT_PORT = 7778                  # Port to receive the result of a comma
 _UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after a notification
 _UDP_NOTIFICATION_RECEIVE_PORT = 3333    # Port to receive notification from the speaker
 
-_UDP_BUFFER_SIZE = 1024
+_UDP_BUFFER_SIZE = 4096                 # 4096 in order to receive Channel data
 _KEEPALIVE_CHECK_PERIOD = 30            # Time in second between each keep-alive check 
 
 # Define Zipp commands ID
@@ -94,6 +94,9 @@ _COMMAND_TABLE = {
     'BatteryLevel': {
         '_get': 256,     # from com.libratone.model.LSSDPNode, fetchBatteryLevel - answer "" on _get, true vale on _get2
         '_get2': 257,    # Received when BatteryLevel_get is sent - answer "59" for instance
+    },
+    'Channel': {
+        '_get': 275,     # from com.libratone.model.LSSDPNode, fetchChannel - answer JSON like [{"channel_id" : 1,"channel_identity" : "31375","channel_name" : "Radio Meuh","channel_type" : "vtuner","isPlaying" : false,"play_token" : ""}, ...]
     },
     'Player': {
         '_get': 278,    # from com.libratone.model.LSSDPNode, fetchPlayer
@@ -176,7 +179,8 @@ class LibratoneZipp:
         # Active variables as JSON list - see command table
         self._voicing_list_json = None   
         self._room_list_json = None      
-        self._player_json = None         
+        self._player_json = None
+        self._channel_json = None
 
         # Calculated variables
         self.state = None               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
@@ -240,19 +244,17 @@ class LibratoneZipp:
         if _LOG_ALL_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
 
         if command == 0: pass
-        elif command == _COMMAND_TABLE['Voicing']['_get'] or command == _COMMAND_TABLE['Voicing']['_set']:
-            self.voicing = self._voicingid_to_name(voicingid=data.decode(), json_list=self._voicing_list_json)
-        elif command == _COMMAND_TABLE['Room']['_get'] or command == _COMMAND_TABLE['Room']['_set']:
-            self.room = self._voicingid_to_name(voicingid=data.decode(), json_list=self._room_list_json)
-        elif command == _COMMAND_TABLE['Voicing']['_getAll']:
-            self._voicing_list_update_from_raw(data.decode())
-        elif command == _COMMAND_TABLE['Room']['_getAll']:
-            self._room_list_update_from_raw(data.decode())
-
         elif command == _COMMAND_TABLE['PlayStatus']['_get']:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
             elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
+        elif command == _COMMAND_TABLE['Channel']['_get']:
+            try: self._channel_json = json.loads(data.decode())
+            except: self._channel_json = None
+        elif command == _COMMAND_TABLE['Voicing']['_get'] or command == _COMMAND_TABLE['Voicing']['_set']: self.voicing = self._voicingid_to_name(voicingid=data.decode(), json_list=self._voicing_list_json)
+        elif command == _COMMAND_TABLE['Room']['_get'] or command == _COMMAND_TABLE['Room']['_set']: self.room = self._voicingid_to_name(voicingid=data.decode(), json_list=self._room_list_json)
+        elif command == _COMMAND_TABLE['Voicing']['_getAll']: self._voicing_list_update_from_raw(data.decode())
+        elif command == _COMMAND_TABLE['Room']['_getAll']: self._room_list_update_from_raw(data.decode())
         elif command == _COMMAND_TABLE['Player']['_get']: self._player_parse(player_data=data.decode())
         elif command == _COMMAND_TABLE['Name']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
@@ -372,6 +374,7 @@ class LibratoneZipp:
     def serialnumber_get(self): return self.get_control_command(command=_COMMAND_TABLE['SerialNumber']['_get'])
     def mutestatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['MuteStatus']['_get'])
     def batterylevel_get(self): return self.get_control_command(command=_COMMAND_TABLE['BatteryLevel']['_get'])
+    def channel_get(self): return self.get_control_command(command=_COMMAND_TABLE['Channel']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -393,6 +396,7 @@ class LibratoneZipp:
         self.voicing_getall()
         self.devicecolor_get()
         self.serialnumber_get()
+        self.channel_get()
 
     # Refresh the state of the Zipp
     def state_refresh(self):
