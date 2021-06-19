@@ -4,7 +4,7 @@ This aims to control a Libratone Zipp speaker with a Python library, potentially
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
-Test with Libratone Zipp 1, firmware 809.
+Tested with Libratone Zipp 1, firmware 809.
 
 ## Usage
 
@@ -35,7 +35,7 @@ The only thing I'm very interested is defining Favorites!
     * [x] Retrieve mute status - but no logic implemented!
 * Playback with Bluetooth or USB
     * [ ] Retrieve basic playback status: play, pause, stop
-    * [ ] Retrieve media type: bluetooth, aux, radio, ...
+    * [ ] Retrieve media type: Bluetooth, aux, radio, ...
     * [ ] Retrieve extended playback status: shuffle, repeat
     * [ ] Set extended playback status: shuffle, repeat
 * Playback control
