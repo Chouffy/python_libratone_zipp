@@ -41,13 +41,13 @@ _COMMAND_TABLE = {
     },
     'PowerMode': {
         # Used for sleep timer
-        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode        
         '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2" + j, j being ??      
+        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see below for data     
         'sleep': 20,    # from com.libratone.model.LSSDPNode, triggerDeviceSleep 
         'wakeup': 00,   # from com.libratone.model.LSSDPNode, triggerDeviceWakeup
     },
     'PlayControl': {
-        '_set': 40,     # # from com.libratone.model.LSSDPNode, setPlayControl
+        '_set': 40,     # # from com.libratone.model.LSSDPNode, setPlayControl - see below for data
         # from com.libratone.luci.PlayControlCommand
         'play': 'PLAY',
         'stop': 'STOP',
@@ -56,7 +56,7 @@ _COMMAND_TABLE = {
         'prev': 'PREV',
     },
     'PlayStatus': {
-        '_get': 51,     # from com.libratone.model.LSSDPNode, fetchPlayStatus
+        '_get': 51,     # from com.libratone.model.LSSDPNode, fetchPlayStatus - see below for data
         # from com.libratone.luci.PlayControlCommand - more state are defined
         'play': b'0',
         'stop': b'1',
@@ -64,13 +64,14 @@ _COMMAND_TABLE = {
     },
     'Volume': {
         '_get': 64,     # from com.libratone.model.LSSDPNode, fetchVolume
-        '_set': 64,     # from com.libratone.model.LSSDPNode, setVolume
+        '_set': 64,     # from com.libratone.model.LSSDPNode, setVolume - expect data with volume 0...100
     },
     'DeviceName': {
         '_get': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName
+        '_set': 90,     # from com.libratone.model.LSSDPNode, fetchDeviceName - expect data with wished device name
     },
     'Player': {
-        '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer
+        '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer - see below for data
         # Favorites, captured:
         'favorite': {
             '1': '{"isFromChannel":false,"play_identity":"1","play_subtitle":"1","play_title":"channel","play_type":"channel","token":""}',
@@ -81,8 +82,8 @@ _COMMAND_TABLE = {
         },
     },
     'Voicing': {
-        '_get': 516,    # from com.libratone.model.LSSDPNode, fetchVoicing
-        '_set': 518,    # from com.libratone.model.LSSDPNode, setVoicing
+        '_get': 516,    # from com.libratone.model.LSSDPNode, fetchVoicing - you'll get a V100-like code
+        '_set': 518,    # from com.libratone.model.LSSDPNode, setVoicing - see below for data in '_data' like V100
         # from com.libratone.enums.Voicing - more voicings are defined (extra bass, enhanced treble, smart) but those aren't accessible to the Libratone Zipp 1
         'neutral': {
             '_data': 'V100',
