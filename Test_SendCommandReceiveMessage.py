@@ -12,7 +12,7 @@ port_listen = 7778
 # SET = port=7777, command, data
 # my_ba = LibratoneMessage.LibratoneMessage(command=15, data="20")
 # GET = port=7777, command, data, commandType=1
-my_ba = LibratoneMessage.LibratoneMessage(command=15, commandType=1)
+my_ba = LibratoneMessage.LibratoneMessage(command=90, commandType=1)
 
 my_ba.print_packet()
 
@@ -24,4 +24,4 @@ packet, ip = my_socket.recvfrom(1024)
 message = LibratoneMessage.LibratoneMessage(packet=packet)
 
 print(message.data)
-# print(message.data.decode())
+print(message.data.decode())
