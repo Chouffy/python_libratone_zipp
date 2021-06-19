@@ -20,7 +20,7 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [ ] Handle exit properly - currently threads can be locking
     * [ ] Use discovery method instead of fixed IP
     * [ ] Make the module compatible with async from Home Assistant
-* Playback status
+* Playback status with Spotify & Radio
     * [x] Retrieve basic playback status: play, pause, stop
     * [x] Retrieve volume
     * [x] Retrieve current playback source
@@ -33,9 +33,10 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
 * Playback control
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set volume
-    * [ ] Set extended playback status: shuffle, repeat
+    * [ ] Set extended playback status with Bluetooth: shuffle, repeat
 * Standby
     * [x] Retrieve actual speaker state
+    * [x] Calculate actual speaker state: UNKOWN, SLEEPING, ON, PLAYING, PAUSED, STOPPED
     * [x] Set to immediate standby and wakeup
     * [x] Set a standby timer
     * [x] Retrieve the defined duration of the standby timer

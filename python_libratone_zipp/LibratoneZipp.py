@@ -37,10 +37,19 @@ else:
     _LOGGER = logging.getLogger("LibratoneZipp")
 
 # Define fixed variables
-STATE_OFF = "OFF"
-STATE_PLAY = "PLAY"
-STATE_PAUSE = "PAUSE"
-STATE_STOP = "STOP"
+STATE_UNKOWN = "UNKOWN"
+STATE_SLEEP = "SLEEPING"
+STATE_ON = "ON"
+STATE_PLAY = "PLAYING"
+STATE_PAUSE = "PAUSED"
+STATE_STOP = "STOPPED"
+
+POWERMODE_AWAKE = "AWAKE"
+POWERMODE_SLEEP = "SLEEP"
+
+PLAYSTATUS_PLAY = STATE_PLAY
+PLAYSTATUS_PAUSE = STATE_PAUSE
+PLAYSTATUS_STOP = STATE_STOP
 
 # Define network variables
 _UDP_CONTROL_PORT = 7777                 # Port to send a command
@@ -58,7 +67,9 @@ _COMMAND_TABLE = {
         '_get': 5,      # from com.libratone.model.LSSDPNode, fetchVersion
     },
     'CurrPowerMode': {
-        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - reply in dec, not ASCII
+        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - reply in dec, not ASCII - see _currpowermode_parsing 
+        'awake': 48,    # from observation
+        'sleeping': 50, # from observation
     },
     'Timer': {
         # Used for sleep timer
@@ -166,6 +177,8 @@ class LibratoneZipp:
         self.serialnumber = None
         
         # Active variables
+        self._currpowermode = None
+        self._playstatus = None
         self.volume = None
         self.batterylevel = None
         self.chargingstatus = None
@@ -243,9 +256,14 @@ class LibratoneZipp:
 
         if command == 0: pass
         elif command == _COMMAND_TABLE['PlayStatus']['_get']:
-            if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
-            elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
-            elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
+            if data == _COMMAND_TABLE['PlayStatus']['play']: self._playstatus = PLAYSTATUS_PLAY
+            elif data == _COMMAND_TABLE['PlayStatus']['stop']: self._playstatus = PLAYSTATUS_STOP
+            elif data == _COMMAND_TABLE['PlayStatus']['pause']: self._playstatus = PLAYSTATUS_PAUSE
+            self._state_calculate()
+        elif command == _COMMAND_TABLE['CurrPowerMode']['_get']:
+            if data[0] == _COMMAND_TABLE['CurrPowerMode']['awake']: self._currpowermode = POWERMODE_AWAKE
+            elif data[0] == _COMMAND_TABLE['CurrPowerMode']['sleeping']: self._currpowermode = POWERMODE_SLEEP
+            self._state_calculate()
         elif command == _COMMAND_TABLE['Channel']['_get']:
             try: self._channel_json = json.loads(data.decode())
             except: self._channel_json = None
@@ -374,22 +392,25 @@ class LibratoneZipp:
     def batterylevel_get(self): return self.get_control_command(command=_COMMAND_TABLE['BatteryLevel']['_get'])
     def channel_get(self): return self.get_control_command(command=_COMMAND_TABLE['Channel']['_get'])
     def timer_get(self): return self.get_control_command(command=_COMMAND_TABLE['Timer']['_get'])
+    def currpowermode_get(self): return self.get_control_command(command=_COMMAND_TABLE['CurrPowerMode']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
+        self.currpowermode_get()
         self.chargingstatus_get()
         self.volume_get()
         self.voicing_get()
-        self.playstatus_get()
         self.room_get()
         self.player_get()
         self.signalstrenght_get()
         self.mutestatus_get()
         self.batterylevel_get()
         self.timer_get()
+        self.playstatus_get()
 
     # Call all *get* for values that are fixed for the lifecycle 
     def get_all_fixed_for_lifecycle(self):
+        self.currpowermode_get()
         self.version_get()
         self.name_get()
         self.room_getall()
@@ -397,6 +418,24 @@ class LibratoneZipp:
         self.devicecolor_get()
         self.serialnumber_get()
         self.channel_get()
+
+    # Calculate Zipp state based on _currpowermode and _playstatus
+    def _state_calculate(self):
+        # If the Zipp sleeps, set this status
+        if self._currpowermode == POWERMODE_SLEEP:
+            self.state = STATE_SLEEP
+            return True
+        elif self._currpowermode == POWERMODE_AWAKE:
+            if self._playstatus == PLAYSTATUS_PLAY: self.state = STATE_PLAY
+            elif self._playstatus == PLAYSTATUS_PAUSE: self.state = STATE_PAUSE
+            elif self._playstatus == PLAYSTATUS_STOP: self.state = STATE_STOP
+            else:
+                self.state = STATE_ON
+                return True
+        else:
+            self.state = STATE_UNKOWN
+            return False
+
 
     # Refresh the state of the Zipp
     def state_refresh(self):
@@ -406,7 +445,7 @@ class LibratoneZipp:
                 self.get_all_fixed_for_lifecycle()
                 time.sleep(_GET_LIFECYCLE_VALUES)
             self.get_all()
-        else: self.state = STATE_OFF
+        else: self.state = STATE_UNKOWN
 
     # Send PlayControl commands
     def _playcontrol_set(self, action):
@@ -538,16 +577,16 @@ class LibratoneZipp:
             self.play_token = None
             self.play_type = None
 
-    # Parse PowerMode timer, return *DEFINED* timer in second, not the actual one which is running!
-    def _timer_parse(self, powermode_data):
-        if powermode_data == b'': return None
-        elif powermode_data[0] == 255: return None  # Always the case when no timer is defined
-        elif powermode_data[0] == 50:   # Always when there's an active timer
-            return powermode_data[1] + powermode_data[2]*256
+    # Parse Timer, return *DEFINED* timer in second, not the actual one which is running!
+    def _timer_parse(self, timer_data):
+        if timer_data == b'': return None
+        elif timer_data[0] == 255: return None  # Always the case when no timer is defined
+        elif timer_data[0] == 50:   # Always when there's an active timer
+            return timer_data[1] + timer_data[2]*256
         else:
             return None
 
-    # Send PowerMode commands - timer is in seconds
+    # Send timer commands - timer is in seconds
     def timer_set(self, timer): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="2"+str(timer))
     def sleep(self): return self.timer_set(0)
     def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
