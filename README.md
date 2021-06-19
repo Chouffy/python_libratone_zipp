@@ -20,7 +20,6 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [ ] Make the module compatible with async from Home Assistant
 * Playback status
     * [x] Retrieve basic playback status: play, pause, stop
-    * [x] Retrieve actual speaker state (approximately) - sleep and awake
     * [x] Retrieve volume
     * [ ] Retrieve current playback source
     * [ ] Retrieve current title
@@ -29,13 +28,14 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set volume
 * Standby
-    * [x] Set to immediate standby
+    * [x] Retrieve actual speaker state
+    * [x] Set to immediate standby and wakeup
     * [ ] Set a standby timer
     * [ ] Retrieve a standby timer
 * Voicing & Room Setting
     * [x] Set a Voicing
     * [x] Retrieve active Voicing
-    * [ ] Retrieve all Voicing
+    * [x] Retrieve all Voicing
     * [x] Set Room Setting
     * [x] Retrieve current Room Setting
     * [x] Retrieve all Room
