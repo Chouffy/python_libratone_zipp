@@ -26,14 +26,14 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
     * [x] Retrieve current playback source
     * [x] Retrieve current title
     * [x] Retrieve mute status - but no logic implemented!
-* Playback status with Bluetooth
+* Playback with Bluetooth or USB
     * [ ] Retrieve basic playback status: play, pause, stop
     * [ ] Retrieve media type: bluetooth, aux, radio, ...
     * [ ] Retrieve extended playback status: shuffle, repeat
+    * [ ] Set extended playback status: shuffle, repeat
 * Playback control
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set volume
-    * [ ] Set extended playback status with Bluetooth: shuffle, repeat
 * Standby
     * [x] Retrieve actual speaker state
     * [x] Calculate actual speaker state: UNKOWN, SLEEPING, ON, PLAYING, PAUSED, STOPPED
@@ -74,16 +74,24 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
 
 ### Unimplemented commands
 
-Following commands where identified but not implemented and/or implemented but not processed due to lack on `data` investigation.
+Following commands where identified but not implemented and/or implemented but not processed due to lack on `data` investigation. The list is not exhaustive!
 
 From Android application, `com.libratone.model.LSSDPNode`:
 command|function|notes
 -|-|-
 10  | fetchSourceInfo
 103 | fetchDeviceState
-520 | fetchMuteStatus|Implemented but not processed due
+152 | fetchSource
+281 | fetchMusicServiceCapability | Answer a JSON
+304 | fetchLimitedFunctionList | Answer 3 bytes
+520 | fetchMuteStatus|Implemented but not processed
+530 | fetchOtaAutoDownLoadStatus
+537 | fetchWifiLinein
 1284| fetchChargingStatus|Implemented but not processed
 1285| fetchPrivateMode
+1536| fetchUsbCurrentPlayId
+1537| fetchUsbPlayMode
+1538| fetchUsbSongInfo
 
 ## Acknowledgment
 

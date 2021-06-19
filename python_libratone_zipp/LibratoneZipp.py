@@ -436,7 +436,6 @@ class LibratoneZipp:
             self.state = STATE_UNKOWN
             return False
 
-
     # Refresh the state of the Zipp
     def state_refresh(self):
         if host_up(self.host):
