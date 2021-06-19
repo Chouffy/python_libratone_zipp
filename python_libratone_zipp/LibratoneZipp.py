@@ -16,7 +16,7 @@ from . import LibratoneMessage
 
 _GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) and asking current values(like voicing)
 
-_LOG_ALL_PACKET = True          # Log all packe
+_LOG_ALL_PACKET = False          # Log all packet
 _LOG_UNKNOWN_PACKET = False     # Log unknown packet
 _LOGGER_PRINT = True            # Redirect logger to stdout, otherwise standard Home Assistant logger
 
@@ -92,8 +92,10 @@ _COMMAND_TABLE = {
         '_set': 90,     # from com.libratone.model.LSSDPNode, setName - expect data with wished device name
     },
     'Player': {
+        '_get': 278,    # from com.libratone.model.LSSDPNode, fetchPlayer
         '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer - see below for data
         # Favorites, captured:
+        # TODO check play_identity 
         'favorite': {
             '1': '{"isFromChannel":false,"play_identity":"1","play_subtitle":"1","play_title":"channel","play_type":"channel","token":""}',
             '2': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"2","play_title":"channel","play_type":"channel","token":""}',
@@ -145,11 +147,13 @@ class LibratoneZipp:
         self.name = None
         
         # Active variables
-        self._voicing_list_json = None   # JSON list - see command table
-        self._room_list_json = None      # JSON list - see command table
         self.volume = None
         self.chargingstatus = None
         self.powermode = None
+        # Active variables as JSON list - see command table
+        self._voicing_list_json = None   
+        self._room_list_json = None      
+        self._player_json = None         
 
         # Calculated variables
         self.state = None               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
@@ -157,6 +161,14 @@ class LibratoneZipp:
         self.voicing = None             # voicingId converted to Name for Voicing
         self.room_list = None           # List of Room "name"
         self.voicing_list = None        # List of Voicing "name"
+        # Variables from Player
+        self.isFromChannel = None
+        self.play_identity = None
+        self.play_preset_available = None
+        self.play_subtitle = None
+        self.play_title = None
+        self.play_token = None
+        self.play_type = None
 
         # Network
 
@@ -218,6 +230,7 @@ class LibratoneZipp:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
             elif data == _COMMAND_TABLE['PlayStatus']['pause']: self.state = STATE_PAUSE
+        elif command == _COMMAND_TABLE['Player']['_get']: self._player_parse(player_data=data.decode())
         elif command == _COMMAND_TABLE['Name']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
@@ -325,6 +338,7 @@ class LibratoneZipp:
     def room_getall(self): return self.get_control_command(command=_COMMAND_TABLE['Room']['_getAll'])
     def voicing_getall(self): return self.get_control_command(command=_COMMAND_TABLE['Voicing']['_getAll'])
     def room_get(self): return self.get_control_command(command=_COMMAND_TABLE['Room']['_get'])
+    def player_get(self): return self.get_control_command(command=_COMMAND_TABLE['Player']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -333,6 +347,7 @@ class LibratoneZipp:
         self.voicing_get()
         self.playstatus_get()
         self.room_get()
+        self.player_get()
 
     # Call all *get* for values that are fixed for the lifecycle 
     def get_all_fixed_for_lifecycle(self):
@@ -470,3 +485,24 @@ class LibratoneZipp:
         except:
             _LOGGER.warning("Error: volume command not sent.")
             return False
+
+    # Parse Player data: populate all play_* variables
+    def _player_parse(self, player_data):
+        try:
+            self._player_json = json.loads(player_data)
+            self.isFromChannel = self._player_json['isFromChannel']
+            self.play_identity = self._player_json['play_identity']
+            self.play_preset_available = self._player_json['play_preset_available']
+            self.play_subtitle = self._player_json['play_subtitle']
+            self.play_title = self._player_json['play_title']
+            self.play_token = self._player_json['play_token']
+            self.play_type = self._player_json['play_type']
+        except:
+            self._player_json = None
+            self.isFromChannel = None
+            self.play_identity = None
+            self.play_preset_available = None
+            self.play_subtitle = None
+            self.play_title = None
+            self.play_token = None
+            self.play_type = None

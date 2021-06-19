@@ -21,9 +21,9 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
 * Playback status
     * [x] Retrieve basic playback status: play, pause, stop
     * [x] Retrieve volume
-    * [ ] Retrieve current playback source
-    * [ ] Retrieve current title
-    * [ ] Retrieve media type: bluetooth, spotify, aux, radio, ...
+    * [x] Retrieve current playback source
+    * [x] Retrieve current title
+    * [x] Retrieve media type: bluetooth, spotify, aux, radio, ...
 * Playback control
     * [x] Set basic playback status: play, pause, stop, next, prev
     * [x] Set volume

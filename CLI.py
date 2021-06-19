@@ -10,7 +10,7 @@ from python_libratone_zipp import LibratoneZipp
 zipp = LibratoneZipp(host='192.168.1.31')
 
 while True:
-    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, room, volume, name_set, info, exit? ")
+    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, player, voicing, room, volume, name_set, info, exit? ")
 
     if user_choice == "play": zipp.play()
     elif user_choice == "pause": zipp.pause()
@@ -34,6 +34,15 @@ while True:
         print(*zipp.room_list, sep= ", ")
         if zipp.room != None: print("Current room:", zipp.room)
         zipp.room_set(input("\nInput room setting name, not ID: "))
+
+    elif user_choice == "player":
+        if zipp.isFromChannel != None: print("isFromChannel:", zipp.isFromChannel)
+        if zipp.play_identity != None: print("play_identity:", zipp.play_identity)
+        if zipp.play_preset_available != None: print("play_preset_available:", zipp.play_preset_available)
+        if zipp.play_subtitle != None: print("play_subtitle:", zipp.play_subtitle)
+        if zipp.play_title != None: print("play_title:", zipp.play_title)
+        if zipp.play_token != None: print("play_token:", zipp.play_token)
+        if zipp.play_type != None: print("play_type:", zipp.play_type)
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)
