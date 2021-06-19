@@ -11,7 +11,7 @@ README = (HERE / "README.md").read_text()
 setup(
     name="python_libratone_zipp",
     packages=["python_libratone_zipp"],
-    version="2.0.0",
+    version="3.0.0",
     description="Control a Libratone Zipp speaker with a Python library",
     long_description=README,
     long_description_content_type="text/markdown",
