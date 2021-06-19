@@ -8,13 +8,31 @@ License: see LICENSE file
 
 import logging
 import json
+import sys
 import time
 import socket
 import threading
 from . import LibratoneMessage
 
-_LOGGER = logging.getLogger("LibratoneZipp")
-_LOG_UNKNOWN_PACKET = False                     # Print unknown packet
+_LOG_ALL_PACKET = True          # Log all packe
+_LOG_UNKNOWN_PACKET = False     # Log unknown packet
+_LOGGER_PRINT = True            # Redirect logger to stdout, otherwise standard Home Assistant logger
+
+if _LOGGER_PRINT:
+    _log_level=logging.DEBUG 
+    _log_format = logging.Formatter('[%(asctime)s] [%(levelname)s] - %(message)s')
+    _LOGGER = logging.getLogger(__name__)                                  
+    _LOGGER.setLevel(_log_level)                                       
+
+    # writing to stdout                                                     
+    handler = logging.StreamHandler(sys.stdout)                             
+    handler.setLevel(_log_level)                                        
+    handler.setFormatter(_log_format)                                        
+    _LOGGER.addHandler(handler)                                            
+
+    _LOGGER.debug("Logging has been setup")                                                   
+else:
+    _LOGGER = logging.getLogger("LibratoneZipp")
 
 # Define fixed variables
 STATE_OFF = "OFF"
@@ -208,6 +226,12 @@ class LibratoneZipp:
             time.sleep(_KEEPALIVE_CHECK_PERIOD)
         _LOGGER.info("Keep-alive thread closed.")
 
+    # Log messgaes in a pretty way
+    def log_zipp_messages(self, command, data, port):
+        try: pretty_data = data.decode()
+        except: pretty_data = data
+        _LOGGER.info("Port:" + str(port) + " Command:" + str(command) + "\tData:" + str(pretty_data))
+
     # Interpret message from Zipp
     def process_zipp_message(self, packet: bytearray, receive_port):
         
@@ -215,13 +239,13 @@ class LibratoneZipp:
         command = zipp_message.get_command_int()
         data = zipp_message.data
 
-        # TODO Implement a skip of data update if there's already data
+        if _LOG_ALL_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
 
         if command == 0: pass
-        elif command == _COMMAND_TABLE['Voicing']['_get']:
+        elif command == _COMMAND_TABLE['Voicing']['_get'] or command == _COMMAND_TABLE['Voicing']['_set']:
             self._voicing_raw = data.decode()
             self._voicing_update_from_raw()
-        elif command == _COMMAND_TABLE['Room']['_get']:
+        elif command == _COMMAND_TABLE['Room']['_get'] or command == _COMMAND_TABLE['Room']['_set']:
             self._room_raw = data.decode()
             self._room_update_from_raw()
         elif command == _COMMAND_TABLE['Room']['_getAll']:
@@ -237,10 +261,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['ChargingStatus']['_get']: self.chargingstatus = data.decode()
         elif command == _COMMAND_TABLE['PowerMode']['_get']: self.powermode = data.decode()
         else:
-            if _LOG_UNKNOWN_PACKET:
-                try: pretty_data = data.decode()
-                except: pretty_data = data
-                _LOGGER.info("\nCommand:", command, "Data:", pretty_data, "Port:", receive_port)
+            if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
             else: pass
 
     # Wait for a message from the Zipp, start a thread to process it and send an ACK to _UDP_NOTIFICATION_SEND_PORT = 3334
