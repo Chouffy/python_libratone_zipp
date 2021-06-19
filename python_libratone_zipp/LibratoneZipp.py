@@ -7,6 +7,7 @@ License: see LICENSE file
 """
 
 import logging
+import json
 import time
 import socket
 import threading
@@ -123,6 +124,9 @@ _COMMAND_TABLE = {
             'description': 'For TV programs with subtle voices',
         }, 
     },
+    'Room': {
+        '_getAll': 525, # from com.libratone.model.LSSDPNode, fetchAllFullRoom - will return a JSON like [{"description":"Basic neutral setting","name":"Neutral","voicingId":"neutral"}, ...]
+    },
     'ChargingStatus': {
         # Used for trigger
         '_get': 1284,   # from com.libratone.model.LSSDPNode, fetchChargingStatus
@@ -144,19 +148,20 @@ class LibratoneZipp:
     """Representing a Libratone Zipp device."""
 
     # host is IP of Zipp
-    def __init__(self, host, name="Zipp"):
-
-        # TODO Publish all variables
+    def __init__(self, host):
 
         # Configuration set by class client
         self.host = host
-        self.name = name
         
+        # TODO Update all variables to be set to Null when disconnect
+
         # Variables fixed for the lifecycle
         self.version = None
+        self.name = None
         
         # Active variables
         self._voicing_raw = None # V10x-like codes
+        self._room_list_raw = None # JSON list - see command table
         self.volume = None
         self.chargingstatus = None
         self.powermode = None
@@ -164,6 +169,7 @@ class LibratoneZipp:
         # Calculated variables
         self.state = None                               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
         self.voicing = None                             # 'name' are used: "Neutral", "Easy Listening", ...
+        self.room_list = None
         self.voicing_list = self.voicing_list_define()
 
         # Network
@@ -208,6 +214,9 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['Voicing']['_get']:
             self._voicing_raw = data.decode()
             self._voicing_update_from_raw()
+        elif command == _COMMAND_TABLE['Room']['_getAll']:
+            self._room_list_raw = data.decode()
+            self._room_list_update_from_raw()
         elif command == _COMMAND_TABLE['PlayStatus']['_get']:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self.state = STATE_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self.state = STATE_STOP
@@ -319,6 +328,7 @@ class LibratoneZipp:
     def voicing_get(self): return self.get_control_command(command=_COMMAND_TABLE['Voicing']['_get'])
     def chargingstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['ChargingStatus']['_get'])
     def playstatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['PlayStatus']['_get'])
+    def room_getall(self): return self.get_control_command(command=_COMMAND_TABLE['Room']['_getAll'])
     
     # Call all *get* functions above
     def get_all(self):
@@ -328,6 +338,7 @@ class LibratoneZipp:
         self.volume_get()
         self.voicing_get()
         self.playstatus_get()
+        self.room_getall()
 
     # Refresh the state of the Zipp
     def state_refresh(self):
@@ -352,7 +363,6 @@ class LibratoneZipp:
 
     # Define a name
     def name_set(self, name:str): return self.set_control_command(command=_COMMAND_TABLE['Name']['_set'], data=str(name))
-    
 
     # Send PowerMode commands
     def _powermode_set(self, action): 
@@ -399,13 +409,25 @@ class LibratoneZipp:
                 list.append(_COMMAND_TABLE['Voicing'][item]['name'])
         return list
 
-    # Transform raw voicing (V10x codes) into 
+    # Transform raw voicing (V10x codes) into a list with only voicing names
     def _voicing_update_from_raw(self):
         for item in _COMMAND_TABLE['Voicing']:
             if item != '_set' and item != '_get':
                 if self._voicing_raw == _COMMAND_TABLE['Voicing'][item]['_data']:
                     self.voicing = _COMMAND_TABLE['Voicing'][item]['name']
-                    return True
+        return True
+
+    # Transform raw all room list (JSON) into a list with only room names
+    def _room_list_update_from_raw(self):
+        try:
+            self._room_list_raw = json.loads(self._room_list_raw)
+            self.room_list = []
+            for item in self._room_list_raw:
+                self.room_list.append(item['name'])
+            return True
+        except:
+            self.room_list = None
+            return False
 
     # Send Volume command
     def volume_set(self, volume):

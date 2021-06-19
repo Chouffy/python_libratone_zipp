@@ -35,8 +35,10 @@ You have to be able to listen to `3333/udp` and `7778/udp`!
 * Voicing & Room Setting
     * [x] Set a Voicing
     * [x] Retrieve active Voicing
+    * [ ] Retrieve all Voicing
     * [ ] Set Room Setting
     * [ ] Retrieve current Room Setting
+    * [x] Retrieve all Room
 * Favorites
     * [x] Play a Favorite
     * [ ] Set a Favorite

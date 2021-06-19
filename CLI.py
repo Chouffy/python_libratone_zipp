@@ -10,7 +10,7 @@ from python_libratone_zipp import LibratoneZipp
 zipp = LibratoneZipp(host='192.168.1.31')
 
 while True:
-    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, voicing_list, volume, name_set, info, exit? ")
+    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, voicing, room, volume, name_set, info, exit? ")
 
     if user_choice == "play": zipp.play()
     elif user_choice == "pause": zipp.pause()
@@ -20,16 +20,24 @@ while True:
     elif user_choice == "sleep": zipp.sleep()
     elif user_choice == "wakeup": zipp.wakeup()
     elif user_choice == "fav_play": zipp.favorite_play(input("Input favorite ID: 1, 2, ... 5? "))
-    elif user_choice == "voicing": zipp.voicing_set(input("Input voicing: Neutral, Easy Listening, ...? "))
     elif user_choice == "volume": zipp.volume_set(input("Input volume 0...100? "))
     elif user_choice == "name_set": zipp.name_set(input("Input device name? "))
 
-    elif user_choice == "voicing_list": print(zipp.voicing_list())
+    elif user_choice == "voicing":
+        print("List of voicing:")
+        print(*zipp.voicing_list, sep= ", ")
+        zipp.voicing_set(input("Input voicing:"))
+
+    elif user_choice == "room":
+        print("List of room:")
+        print(*zipp.room_list, sep= ", ")
+        zipp.room_set(input("Input room setting:"))
 
     elif user_choice == "info":
         if zipp.version != None: print("Version:", zipp.version)
         if zipp.name != None: print("Name:", zipp.name)
         if zipp.voicing != None: print("Voicing:", zipp.voicing)
+        if zipp.room != None: print("Room:", zipp.room)
         if zipp.state   != None: print("State:", zipp.state)
         if zipp.volume  != None: print("Volume:", zipp.volume)
         if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
