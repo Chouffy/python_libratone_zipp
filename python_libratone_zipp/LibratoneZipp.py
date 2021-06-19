@@ -16,9 +16,9 @@ from . import LibratoneMessage
 
 _GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) and asking current values(like voicing)
 
-_LOG_ALL_PACKET = False          # Log all packet
-_LOG_UNKNOWN_PACKET = True     # Log unknown packet
-_LOGGER_PRINT = True            # Redirect logger to stdout, otherwise standard Home Assistant logger
+_LOG_ALL_PACKET = False         # Log all packet
+_LOG_UNKNOWN_PACKET = False     # Log unknown packet
+_LOGGER_PRINT = False           # Redirect logger to stdout, otherwise standard Home Assistant logger
 
 if _LOGGER_PRINT:
     _log_level=logging.DEBUG 
