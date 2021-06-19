@@ -48,7 +48,7 @@ while True:
         print("Content of channel:", zipp._channel_json)
 
     elif user_choice == "timer":
-        print("Actual timer:", zipp.powermode)
+        print("Configured timer:", zipp.timer)
         zipp.timer_set(input("Input timer in seconds:"))
 
     elif user_choice == "info":
@@ -63,7 +63,7 @@ while True:
         if zipp.state   != None: print("State:", zipp.state)
         if zipp.volume  != None: print("Volume:", zipp.volume)
         if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
-        if zipp.powermode  != None: print("Power mode:", zipp.powermode)
+        if zipp.timer  != None: print("Timer:", zipp.timer)
         if zipp.batterylevel  != None: print("BatteryLevel:", zipp.batterylevel)
         
     elif user_choice == "exit":

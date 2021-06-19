@@ -58,9 +58,9 @@ _COMMAND_TABLE = {
         '_get': 5,      # from com.libratone.model.LSSDPNode, fetchVersion
     },
     'CurrPowerMode': {
-        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - but no reply when asked?
+        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - reply in dec, not ASCII
     },
-    'PowerMode': {
+    'Timer': {
         # Used for sleep timer
         '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2" + j, j being seconds      
         '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see _powermode_parse for parsing 
@@ -169,7 +169,7 @@ class LibratoneZipp:
         self.volume = None
         self.batterylevel = None
         self.chargingstatus = None
-        self.powermode = None           # Timer in seconds, None if no timers active
+        self.timer = None           # Timer in seconds, None if no timers active
         self.signalstrenght = None
         self.devicecolor = None
         self.mutestatus = None
@@ -254,7 +254,7 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['Voicing']['_getAll']: self._voicing_list_update_from_raw(data.decode())
         elif command == _COMMAND_TABLE['Room']['_getAll']: self._room_list_update_from_raw(data.decode())
         elif command == _COMMAND_TABLE['Player']['_get']: self._player_parse(player_data=data.decode())
-        elif command == _COMMAND_TABLE['PowerMode']['_get']: self.powermode = self._powermode_parse(data)
+        elif command == _COMMAND_TABLE['Timer']['_get']: self.timer = self._powermode_parse(data)
         elif command == _COMMAND_TABLE['Name']['_get']: self.name = data.decode()
         elif command == _COMMAND_TABLE['Version']['_get']: self.version = data.decode()
         elif command == _COMMAND_TABLE['Volume']['_get']: self.volume = data.decode()
@@ -287,7 +287,7 @@ class LibratoneZipp:
                 self._voicing_raw = None 
                 self.volume = None
                 self.chargingstatus = None
-                self.powermode = None
+                self.timer = None
                 self.voicing = None
                 while(self.state == STATE_OFF):
                     time.sleep(_KEEPALIVE_CHECK_PERIOD)
@@ -373,7 +373,7 @@ class LibratoneZipp:
     def mutestatus_get(self): return self.get_control_command(command=_COMMAND_TABLE['MuteStatus']['_get'])
     def batterylevel_get(self): return self.get_control_command(command=_COMMAND_TABLE['BatteryLevel']['_get'])
     def channel_get(self): return self.get_control_command(command=_COMMAND_TABLE['Channel']['_get'])
-    def powermode_get(self): return self.get_control_command(command=_COMMAND_TABLE['PowerMode']['_get'])
+    def timer_get(self): return self.get_control_command(command=_COMMAND_TABLE['Timer']['_get'])
     
     # Call all *get* functions above, except fixed values
     def get_all(self):
@@ -386,7 +386,7 @@ class LibratoneZipp:
         self.signalstrenght_get()
         self.mutestatus_get()
         self.batterylevel_get()
-        self.powermode_get()
+        self.timer_get()
 
     # Call all *get* for values that are fixed for the lifecycle 
     def get_all_fixed_for_lifecycle(self):
@@ -548,6 +548,6 @@ class LibratoneZipp:
             return None
 
     # Send PowerMode commands - timer is in seconds
-    def timer_set(self, timer): return self.set_control_command(command=_COMMAND_TABLE['PowerMode']['_set'], data="2"+str(timer))
+    def timer_set(self, timer): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="2"+str(timer))
     def sleep(self): return self.timer_set(0)
-    def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['PowerMode']['_set'], data="F0")
+    def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
