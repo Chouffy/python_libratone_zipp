@@ -37,7 +37,7 @@ else:
     _LOGGER = logging.getLogger("LibratoneZipp")
 
 # Define fixed variables
-STATE_UNKOWN = "UNKOWN"
+STATE_UNKNOWN = "UNKNOWN"
 STATE_SLEEP = "SLEEPING"
 STATE_ON = "ON"
 STATE_PLAY = "PLAYING"
@@ -58,7 +58,7 @@ _UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after
 _UDP_NOTIFICATION_RECEIVE_PORT = 3333    # Port to receive notification from the speaker
 
 _UDP_BUFFER_SIZE = 4096                 # 4096 in order to receive Channel data
-_KEEPALIVE_CHECK_PERIOD = 30            # Time in second between each keep-alive check 
+_KEEPALIVE_CHECK_PERIOD = 60            # Time in second between each keep-alive check 
 
 # Define Zipp commands ID
 _COMMAND_TABLE = {
@@ -115,9 +115,9 @@ _COMMAND_TABLE = {
         'favorite': {
             '1': '{"isFromChannel":false,"play_identity":"1","play_subtitle":"1","play_title":"channel","play_type":"channel","token":""}',
             '2': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"2","play_title":"channel","play_type":"channel","token":""}',
-            '3': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"3","play_title":"channel","play_type":"channel","token":""}',
-            '4': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"4","play_title":"channel","play_type":"channel","token":""}',
-            '5': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"5","play_title":"channel","play_type":"channel","token":""}',
+            '3': '{"isFromChannel":false,"play_identity":"3","play_subtitle":"3","play_title":"channel","play_type":"channel","token":""}',
+            '4': '{"isFromChannel":false,"play_identity":"4","play_subtitle":"4","play_title":"channel","play_type":"channel","token":""}',
+            '5': '{"isFromChannel":false,"play_identity":"5","play_subtitle":"5","play_title":"channel","play_type":"channel","token":""}',
         },
     },
     'Voicing': {
@@ -242,7 +242,6 @@ class LibratoneZipp:
         self._room_list_json = None      
         self._player_json = None
         self._channel_json = None
-        self.state = None
         self.room = None
         self.voicing = None
         self.room_list = None
@@ -261,12 +260,13 @@ class LibratoneZipp:
         self.set_control_command(command=_COMMAND_TABLE['Volume']['_set'], data=self.volume)
         self._listening_result_flag = False
         self.get_control_command(command=_COMMAND_TABLE['Version']['_get'])
-        self._keepalive_thread = False
+        self._keepalive_flag = False
         self._cleanup_variables()
-        _LOGGER.info("Disconnected from Libratone Zipp, waiting for last packets.")
+        _LOGGER.info("Disconnected from Libratone Zipp, waiting for last packets and keepalive thread.")
 
     # Do a state_refresh every _KEEPALIVE_CHECK_PERIOD seconds to update self.state
     def _keepalive_check(self):
+        _LOGGER.info("Keep-alive thread started.")
         while(self._keepalive_flag):
             self.state_refresh()
             time.sleep(_KEEPALIVE_CHECK_PERIOD)
@@ -287,7 +287,7 @@ class LibratoneZipp:
 
         if _LOG_ALL_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
 
-        if command == 0: pass
+        if data == "": pass # Skip everything which do not have any data in it
         elif command == _COMMAND_TABLE['PlayStatus']['_get']:
             if data == _COMMAND_TABLE['PlayStatus']['play']: self._playstatus = PLAYSTATUS_PLAY
             elif data == _COMMAND_TABLE['PlayStatus']['stop']: self._playstatus = PLAYSTATUS_STOP
@@ -333,10 +333,10 @@ class LibratoneZipp:
                 if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (self.host, _UDP_NOTIFICATION_SEND_PORT))
             except:
                 _LOGGER.info("Connection closed! Port %s", str(receive_port))
-                self.state = STATE_UNKOWN
-                self._cleanup_variables()
-                while(self.state == STATE_UNKOWN):
+                self.state = STATE_UNKNOWN
+                while(self.state == STATE_UNKNOWN):
                     time.sleep(_KEEPALIVE_CHECK_PERIOD)
+        _LOGGER.info("Stopped listening Zipp messages on %s", str(receive_port))
 
     # Create a socket, start a thread to manage incoming messages from receive_port and send a trigger to trigger_port
     def _get_new_socket(self, receive_port, trigger_port=None, ack_port=None):
@@ -461,7 +461,7 @@ class LibratoneZipp:
                 self.state = STATE_ON
                 return True
         else:
-            self.state = STATE_UNKOWN
+            self.state = STATE_UNKNOWN
             return False
 
     # Refresh the state of the Zipp
@@ -472,7 +472,9 @@ class LibratoneZipp:
                 self.get_all_fixed_for_lifecycle()
                 time.sleep(_GET_LIFECYCLE_VALUES)
             self.get_all()
-        else: self.state = STATE_UNKOWN
+        else:
+            self._cleanup_variables()
+            self.state = STATE_UNKNOWN
 
     # Send PlayControl commands
     def _playcontrol_set(self, action):
@@ -509,9 +511,9 @@ class LibratoneZipp:
     # Send a voicingid, either for type="Voicing" or type="Room"
     def _voicingid_set(self, voicing_name, type):
 
-        if type != "Voicing":
+        if type == "Voicing":
             json_list = self._voicing_list_json
-        elif type != "Room":
+        elif type == "Room":
             json_list = self._room_list_json
         else:
             _LOGGER.warning("voicingid_set: type must be either 'Voicing' or 'Room'")
@@ -529,7 +531,7 @@ class LibratoneZipp:
 
     # Send Voicing command
     def voicing_set(self, voicing_name:str): return self._voicingid_set(voicing_name=voicing_name, type="Voicing")
-    def room_set(self, room_name:str): return self._voicingid_set(voicing_name=room_name, type="Voicing")
+    def room_set(self, room_name:str): return self._voicingid_set(voicing_name=room_name, type="Room")
 
 
     # Transform raw all room/voicing list (JSON) into a list with only room names
@@ -585,24 +587,29 @@ class LibratoneZipp:
 
     # Parse Player data: populate all play_* variables
     def _player_parse(self, player_data):
+
+        # Initialize to none
+        self._player_json = None
+        self.isFromChannel = None
+        self.play_identity = None
+        self.play_preset_available = None
+        self.play_subtitle = None
+        self.play_title = None
+        self.play_token = None
+        self.play_type = None
+
         try:
             self._player_json = json.loads(player_data)
-            self.isFromChannel = self._player_json['isFromChannel']
-            self.play_identity = self._player_json['play_identity']
-            self.play_preset_available = self._player_json['play_preset_available']
-            self.play_subtitle = self._player_json['play_subtitle']
-            self.play_title = self._player_json['play_title']
-            self.play_token = self._player_json['play_token']
-            self.play_type = self._player_json['play_type']
         except:
-            self._player_json = None
-            self.isFromChannel = None
-            self.play_identity = None
-            self.play_preset_available = None
-            self.play_subtitle = None
-            self.play_title = None
-            self.play_token = None
-            self.play_type = None
+            pass
+
+        self.isFromChannel = self._player_json.get('isFromChannel', '')
+        self.play_identity = self._player_json.get('play_identity', '')
+        self.play_preset_available = self._player_json.get('play_preset_available', '')
+        self.play_subtitle = self._player_json.get('play_subtitle', '')
+        self.play_title = self._player_json.get('play_title', '')
+        self.play_token = self._player_json.get('play_token', '')
+        self.play_type = self._player_json.get('play_type', '')
 
     # Parse Timer, return *DEFINED* timer in second, not the actual one which is running!
     def _timer_parse(self, timer_data):
@@ -615,5 +622,6 @@ class LibratoneZipp:
 
     # Send timer commands - timer is in seconds
     def timer_set(self, timer): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="2"+str(timer))
+    def timer_cancel(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
     def sleep(self): return self.timer_set(0)
-    def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
+    def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="00")

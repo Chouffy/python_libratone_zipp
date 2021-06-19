@@ -19,6 +19,7 @@ while True:
     elif user_choice == "prev": zipp.prev()
     elif user_choice == "sleep": zipp.sleep()
     elif user_choice == "wakeup": zipp.wakeup()
+
     elif user_choice == "fav_play": zipp.favorite_play(input("Input favorite ID: 1, 2, ... 5? "))
     elif user_choice == "volume": zipp.volume_set(input("Input volume 0...100? "))
     elif user_choice == "name_set": zipp.name_set(input("Input device name? "))
@@ -47,24 +48,25 @@ while True:
     elif user_choice == "channel":
         print("Content of channel:", zipp._channel_json)
 
+    elif user_choice == "timer_cancel": zipp.timer_cancel()
     elif user_choice == "timer":
         print("Configured timer:", zipp.timer)
         zipp.timer_set(input("Input timer in seconds:"))
 
     elif user_choice == "info":
+        if zipp.state   != None: print("State:", zipp.state)
+        if zipp.name != None: print("Name:", zipp.name)
         if zipp.version != None: print("Version:", zipp.version)
-        if zipp.mutestatus != None: print("MuteStatus:", zipp.mutestatus)
+        if zipp.volume  != None: print("Volume:", zipp.volume)
         if zipp.serialnumber != None: print("SerialNumber:", zipp.serialnumber)
         if zipp.devicecolor != None: print("DeviceColor:", zipp.devicecolor)
-        if zipp.signalstrenght != None: print("SignalStrength:", zipp.signalstrenght)
-        if zipp.name != None: print("Name:", zipp.name)
         if zipp.voicing != None: print("Voicing:", zipp.voicing)
         if zipp.room != None: print("Room:", zipp.room)
-        if zipp.state   != None: print("State:", zipp.state)
-        if zipp.volume  != None: print("Volume:", zipp.volume)
         if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
-        if zipp.timer  != None: print("Timer:", zipp.timer)
         if zipp.batterylevel  != None: print("BatteryLevel:", zipp.batterylevel)
+        if zipp.timer  != None: print("Timer:", zipp.timer)
+        if zipp.signalstrenght != None: print("SignalStrength:", zipp.signalstrenght)
+        if zipp.mutestatus != None: print("MuteStatus:", zipp.mutestatus)
         
     elif user_choice == "exit":
         break

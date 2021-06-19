@@ -24,7 +24,7 @@ The only thing I'm very interested is defining Favorites!
     * [x] Clean text variables, declare variable on top instead of using text like "play"
     * [x] Create a Command Line Interface - CLI client
     * [x] Publish on PyPi
-    * [ ] Handle exit properly - currently threads can be locking
+    * [x] Handle exit properly - but need max _KEEPALIVE_CHECK_PERIOD seconds to exit
     * [ ] Use discovery method instead of fixed IP
     * [ ] Make the module compatible with async from Home Assistant
 * Playback status with Spotify & Radio
