@@ -1,6 +1,6 @@
 # Libratone Zipp controller library in Python
 
-This aims to control a Libratone Zipp speaker with a Python library, potentially usable in [Home Assistant](https://www.home-assistant.io/) with [this module](https://github.com/Chouffy/home_assistant_libratone_zipp).
+This aims to control **one** Libratone Zipp speaker with a Python library, potentially usable in [Home Assistant](https://www.home-assistant.io/) with [this module](https://github.com/Chouffy/home_assistant_libratone_zipp).
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
@@ -25,6 +25,7 @@ The only thing I'm very interested is defining Favorites!
     * [x] Create a Command Line Interface - CLI client
     * [x] Publish on PyPi
     * [x] Handle exit properly - but need max _KEEPALIVE_CHECK_PERIOD seconds to exit
+    * [ ] Make the module usable with multiple speaker
     * [ ] Use discovery method instead of fixed IP
     * [ ] Make the module compatible with async from Home Assistant
 * Playback status with Spotify & Radio
