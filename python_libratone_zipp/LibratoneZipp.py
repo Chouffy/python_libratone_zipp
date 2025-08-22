@@ -184,7 +184,7 @@ class LibratoneZipp:
         self.host = host
 
         
-        # after self.host = host and your normal state initialization
+        # after self.host = host and normal state initialization
 
         if USE_SOCKET_HUB:
             # Use shared sockets; do NOT bind per device
