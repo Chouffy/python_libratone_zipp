@@ -7,9 +7,13 @@ Command-Line Interface for the `python_libratone_zipp` module.
 
 from python_libratone_zipp import LibratoneZipp
 
-zipp = LibratoneZipp(host='192.168.188.154')
+zipp1 = LibratoneZipp(host='192.168.188.154')
+zipp2 = LibratoneZipp(host="192.168.188.40")
+
+speakers = [zipp1, zipp2]
 
 while True:
+    zipp = speakers[int(input(f"input the desired speaker: 1-{len(speakers)}")) - 1]
     user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, player, voicing, room, volume, name_set, info, channel, timer, exit? ")
 
     if user_choice == "play": zipp.play()

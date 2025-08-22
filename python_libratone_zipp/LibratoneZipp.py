@@ -14,6 +14,20 @@ import socket
 import threading
 from . import LibratoneMessage
 
+from .socket_hub import SocketHub
+
+USE_SOCKET_HUB = True  # set to True to use the shared sockets (3333/7778)
+try:
+    _hub_singleton = None
+    def _get_hub():
+        global _hub_singleton
+        if _hub_singleton is None:
+            _hub_singleton = SocketHub()
+        return _hub_singleton
+except Exception:
+    # If the hub isn't available, fall back to original behavior
+    USE_SOCKET_HUB = False
+
 _GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) and asking current values(like voicing)
 
 _LOG_ALL_PACKET = False         # Log all packet
@@ -168,7 +182,33 @@ class LibratoneZipp:
 
         # Configuration set by class client
         self.host = host
+
         
+        # after self.host = host and your normal state initialization
+
+        if USE_SOCKET_HUB:
+            # Use shared sockets; do NOT bind per device
+            _get_hub().register(self)
+            self._listening_notification_flag = False
+            self._listening_notification_thread = None
+            self._listening_notification_socket = None
+            self._listening_result_flag = False
+            self._listening_result_thread = None
+            self._listening_result_socket = None
+        else:
+            # ORIGINAL per-device sockets (unchanged)
+            self._listening_notification_flag = True
+            (self._listening_notification_socket,
+                self._listening_notification_thread) = self._get_new_socket(
+                receive_port=_UDP_NOTIFICATION_RECEIVE_PORT,
+                trigger_port=_UDP_CONTROL_PORT,
+                ack_port=_UDP_NOTIFICATION_SEND_PORT,
+            )
+            self._listening_result_flag = True
+            (self._listening_result_socket,
+                self._listening_result_thread) = self._get_new_socket(
+                receive_port=_UDP_RESULT_PORT
+            )            
         # TODO Update all variables to be set to Null when disconnect
 
         # Variables fixed for the lifecycle
@@ -209,14 +249,6 @@ class LibratoneZipp:
         self.play_type = None
 
         # Network
-
-        ## Setup 1st thread to monitor _UDP_NOTIFICATION_RECEIVE_PORT = 3333, where Zipp send notifications proactively, after an initial trigger and if ACK are send for every packet
-        self._listening_notification_flag = True   # Flag to shut down the thread
-        self._listening_notification_socket, self._listening_notification_thread = self._get_new_socket(receive_port=_UDP_NOTIFICATION_RECEIVE_PORT, trigger_port=_UDP_CONTROL_PORT, ack_port=_UDP_NOTIFICATION_SEND_PORT)
-
-        ## Setup 2nd thread to monitor _UDP_RESULT_PORT = 7778, where Zipp answer request made to _UDP_CONTROL_PORT = 7777
-        self._listening_result_flag = True
-        self._listening_result_socket, self._listening_result_thread = self._get_new_socket(receive_port=_UDP_RESULT_PORT)
 
         ## Setup 3rd thread to make regular call to Zipp in order to update status in case of desync
         self._keepalive_flag = True
@@ -263,6 +295,11 @@ class LibratoneZipp:
         self._keepalive_flag = False
         self._cleanup_variables()
         _LOGGER.info("Disconnected from Libratone Zipp, waiting for last packets and keepalive thread.")
+        if USE_SOCKET_HUB:
+            try:
+                _get_hub().unregister(self)
+            except Exception:
+                pass
 
     # Do a state_refresh every _KEEPALIVE_CHECK_PERIOD seconds to update self.state
     def _keepalive_check(self):
@@ -339,62 +376,116 @@ class LibratoneZipp:
         _LOGGER.info("Stopped listening Zipp messages on %s", str(receive_port))
 
     # Create a socket, start a thread to manage incoming messages from receive_port and send a trigger to trigger_port
+    
     def _get_new_socket(self, receive_port, trigger_port=None, ack_port=None):
+        """Create one UDP socket bound to receive_port, start its recv thread, and optionally send a trigger."""
         try:
-            _new_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Optional: on some OSes this helps quick restarts; does NOT allow two binds simultaneously.
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-            # Instanciate a thread to manage incoming messages
-            _new_thread = threading.Thread(target=self.listen_incoming_zipp_notification,  name="Listen_incoming_"+str(receive_port), args=[_new_socket, receive_port, ack_port])
-            _new_thread.start()
+            print(f"[LZ] binding receive_port {receive_port}")
+            s.bind(("", receive_port))
 
-            # Set up a listening socker
-            _new_socket.bind(("", receive_port))
+            # Start the listener thread AFTER bind
+            t = threading.Thread(
+                target=self.listen_incoming_zipp_notification,
+                name=f"Listen_incoming_{receive_port}",
+                args=[s, receive_port, ack_port],
+                daemon=True,
+            )
+            t.start()
 
-            if trigger_port != None:
-                # Send trigger
-                _new_socket.sendto(LibratoneMessage.LibratoneMessage(command=_COMMAND_TABLE['ChargingStatus']['_get']).get_packet(), (self.host, trigger_port))
+            # Optional trigger to kick traffic (same as your original intent)
+            if trigger_port is not None:
+                try:
+                    pkt = LibratoneMessage.LibratoneMessage(
+                        command=_COMMAND_TABLE["ChargingStatus"]["_get"]
+                    ).get_packet()
+                    s.sendto(pkt, (self.host, trigger_port))
+                except Exception as e:
+                    _LOGGER.warning("Trigger send failed on port %s: %s", trigger_port, e)
 
-            # TODO Maybe a keep-alive thread (send ba_ack every 10 min) will be needed
-            return _new_socket, _new_thread
+            return s, t
 
-        except ConnectionError as connection_error:
-            _LOGGER.warning("Connection error: %s", connection_error)
+        except socket.gaierror as e:
+            _LOGGER.warning("Address-related error: %s", e)
             return None
-        except socket.gaierror as socket_gaierror:
-            _LOGGER.warning("Address-related error: %s", socket_gaierror)
+        except ConnectionError as e:
+            _LOGGER.warning("Connection error: %s", e)
             return None
-        except socket.error as socket_error:
-            _LOGGER.warning("Socket error: %s", socket_error)
+        except OSError as e:
+            _LOGGER.warning("Socket error binding %s: %s", receive_port, e)
             return None
+           
+    def send_command(self, port, command, commandType=None, data=None):
+        """Send a command packet. In hub mode, use shared sockets; otherwise, legacy per-device socket.
+        Returns True on successful send, False on failure.
+        """
+        # Build the exact same packet as before
+        message = LibratoneMessage.LibratoneMessage(
+            command=command, data=data, commandType=commandType
+        ).get_packet()
 
-    # Send a defined message to the zipp at a defined port
-    def send_command(self, port, command, commandType = None, data = None):
+        # --- Hub path: bypass per-device sockets entirely ---
+        if 'USE_SOCKET_HUB' in globals() and USE_SOCKET_HUB:
+            try:
+                _get_hub().send_control(self.host, message)  # always goes to host:7777
+                return True
+            except Exception as e:
+                try:
+                    _LOGGER.error("Hub send_control failed: %s", e)
+                except Exception:
+                    pass
+                return False
+
+        # --- Legacy path: original per-device socket logic ---
         if self._listening_notification_socket is None:
-            self._listening_notification_socket = self._get_new_socket()
+            self._listening_notification_socket, _ = self._get_new_socket(receive_port=_UDP_NOTIFICATION_RECEIVE_PORT)
+            if self._listening_notification_socket is None:
+                try:
+                    _LOGGER.warning("Failed to create notification socket")
+                except Exception:
+                    pass
+                return False
 
         try:
-            # Generate the message
-            message = LibratoneMessage.LibratoneMessage(command=command, data=data, commandType=commandType).get_packet()
-
-            # Send a store the answer in resp
+            # Send and store the answer in resp
             resp = self._listening_notification_socket.sendto(message, (self.host, port))
 
             if resp == 0:
-                self._listening_notification_socket.close()
+                try:
+                    _LOGGER.warning("Send fail, disconnecting socket")
+                except Exception:
+                    pass
+                try:
+                    self._listening_notification_socket.close()
+                except Exception:
+                    pass
                 self._listening_notification_socket = None
-                _LOGGER.warning("Send fail, disconnecting socket")
-            else:
-                return True
+                return False
+            return True
 
         except (BrokenPipeError, ConnectionError) as connect_error:
-            _LOGGER.warning("Connection error, retrying. %s", connect_error)
+            try:
+                _LOGGER.warning("Connection error, retrying. %s", connect_error)
+            except Exception:
+                pass
             self._listening_notification_socket = None
             self._listening_notification_socket = self._get_new_socket(self.host, port)
             if self._listening_notification_socket is not None:
-                # retrying after broken pipe error
-                self._listening_notification_socket.sendto(message, (self.host, port))
-    
-    # Send a control message to set something (port _UDP_CONTROL_PORT = 7777) - Use the send_command function
+                try:
+                    # retrying after broken pipe error
+                    self._listening_notification_socket.sendto(message, (self.host, port))
+                    return True
+                except Exception as e2:
+                    try:
+                        _LOGGER.error("Retry send failed: %s", e2)
+                    except Exception:
+                        pass
+            return False
+
+        # Send a control message to set something (port _UDP_CONTROL_PORT = 7777) - Use the send_command function
     def set_control_command(self, command, data = None):
         return self.send_command(port=_UDP_CONTROL_PORT, command=command, data=data)
 

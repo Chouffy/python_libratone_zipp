@@ -2,7 +2,7 @@ from python_libratone_zipp.LibratoneZipp import LibratoneZipp
 import socket, threading
 from python_libratone_zipp import LibratoneZipp, LibratoneMessage
 
-host = '192.168.1.31'
+host = '192.168.188.154'
 
 _PRINT_EACH_BYTE = False
 
