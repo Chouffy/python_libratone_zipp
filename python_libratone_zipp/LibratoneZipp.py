@@ -22,7 +22,7 @@ _hub_singleton = None
 _hub_lock = threading.Lock()
 
 def _get_hub():
-"""Thread-safe lazy init of the shared SocketHub."""
+    """Thread-safe lazy init of the shared SocketHub."""
     global _hub_singleton
     if _hub_singleton is None:
         with _hub_lock:
