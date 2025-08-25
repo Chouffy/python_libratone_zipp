@@ -17,6 +17,7 @@ class SocketHub:
     """
     def __init__(self):
         self._devices = {}   # ip -> device (must implement process_zipp_message(packet, port))
+        self._lock = threading.Lock()
         self._running = True
 
         # Bind once: notifications and results
@@ -45,11 +46,13 @@ class SocketHub:
 
     def register(self, device):
         """Call with a device that has `host` (IP string) and `process_zipp_message(bytes, port)`."""
-        self._devices[device.host] = device
+        with self._lock:
+            self._devices[device.host] = device
 
     def unregister(self, device):
-        self._devices.pop(device.host, None)
-
+        with self._lock:
+            self._devices.pop(device.host, None)
+            
     def send_control(self, host: str, packet: bytes):
         """Send a pre-built packet to the speaker's control port (7777)."""
         self._send_sock.sendto(packet, (host, _UDP_CONTROL_PORT))
@@ -73,18 +76,16 @@ class SocketHub:
 
     # --- Internals ----------------------------------------------------------
 
-    def _rx_loop(self, sock: socket.socket, rx_port: int, do_ack: bool):
+    def _rx_loop(self, sock, rx_port, do_ack):
         while self._running:
             try:
-                data, (src_ip, _src_port) = sock.recvfrom(_UDP_BUFFER_SIZE)
+                data, (src_ip, _src) = sock.recvfrom(_UDP_BUFFER_SIZE)
             except OSError:
                 break
-            dev = self._devices.get(src_ip)
-            if dev is not None:
-                # Hand raw bytes to the device's existing parser
-                dev.process_zipp_message(data, rx_port)
-
-                # For notifications, send an ACK back (same format you already use)
+            with self._lock:
+                dev = self._devices.get(src_ip)
+            if dev:
+                dev.process_zipp_message(bytearray(data), rx_port)
                 if do_ack:
                     ack = LibratoneMessage(command=0).get_packet()
                     self._send_sock.sendto(ack, (src_ip, _UDP_NOTIFICATION_ACK))

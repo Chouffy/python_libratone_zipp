@@ -17,16 +17,19 @@ from . import LibratoneMessage
 from .socket_hub import SocketHub
 
 USE_SOCKET_HUB = True  # set to True to use the shared sockets (3333/7778)
-try:
-    _hub_singleton = None
-    def _get_hub():
-        global _hub_singleton
-        if _hub_singleton is None:
-            _hub_singleton = SocketHub()
-        return _hub_singleton
-except Exception:
-    # If the hub isn't available, fall back to original behavior
-    USE_SOCKET_HUB = False
+
+_hub_singleton = None
+_hub_lock = threading.Lock()
+
+def _get_hub():
+"""Thread-safe lazy init of the shared SocketHub."""
+    global _hub_singleton
+    if _hub_singleton is None:
+        with _hub_lock:
+            if _hub_singleton is None:
+                from .socket_hub import SocketHub
+                _hub_singleton = SocketHub()
+    return _hub_singleton
 
 _GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) and asking current values(like voicing)
 
