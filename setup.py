@@ -19,7 +19,7 @@ setup(
     project_urls={
         "Bug Tracker": "https://github.com/Chouffy/python_libratone_zipp/issues",
     },
-    author="Chouffy", "Calyorbro",
+    author="Chouffy, Calyorbro",
     author_email="git@chouffy.net",
     classifiers=[
         "License :: OSI Approved :: MIT License",
