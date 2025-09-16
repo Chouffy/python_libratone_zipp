@@ -2,7 +2,7 @@ from python_libratone_zipp.LibratoneZipp import LibratoneZipp
 import socket, threading
 from python_libratone_zipp import LibratoneZipp, LibratoneMessage
 
-host = '192.168.1.x'                    # IP of the Zipp
+zippIP = '192.168.1.x'                    # IP of the Zipp
 
 _PRINT_EACH_BYTE = False
 
@@ -34,7 +34,7 @@ def listen_incoming_zipp_notification(socket, receive_port, ack_port=None):
         thread = threading.Thread(target=process_zipp_message, name="Process_Zipp_Message", args=[message, receive_port])
         thread.start()
         # Send the ack
-        if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (host, _UDP_NOTIFICATION_SEND_PORT))
+        if ack_port != None: socket.sendto(LibratoneMessage.LibratoneMessage(command=0).get_packet(), (zippIP, _UDP_NOTIFICATION_SEND_PORT))
 def thread_setup():
     # Thread for _UDP_RESULT_PORT
     my_socket_UDP_RESULT_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -61,5 +61,5 @@ my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port_send = _UDP_CONTROL_PORT
 while True:
     print("Command will be send on", port_send, "\n")
-    my_socket.sendto(my_ba.get_packet(), (host, port_send))
+    my_socket.sendto(my_ba.get_packet(), (zippIP, port_send))
     input("Press enter to resend\n")
