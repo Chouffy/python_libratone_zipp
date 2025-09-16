@@ -3,7 +3,14 @@
 """
 Test the SocketHub with two Libratone speakers, emulating how Home Assistant
 would interact with multiple devices in a single process.
+
+Parameters (can be passed via arguments):
+host1 = First Zipp speaker
+host2 = Second Zipp speaker
 """
+
+host1 = '192.168.xx.xx'
+host2 = '192.168.xx.yy'
 
 import sys
 import time
@@ -78,8 +85,8 @@ def choose_target_volume(current, base):
 
 
 def main():
-    ip1 = sys.argv[1] if len(sys.argv) > 1 else "192.168.188.154"
-    ip2 = sys.argv[2] if len(sys.argv) > 2 else "192.168.188.40"
+    ip1 = sys.argv[1] if len(sys.argv) > 1 else host1
+    ip2 = sys.argv[2] if len(sys.argv) > 2 else host2
 
     print(f"[SETUP] Initializing devices via hub: {ip1} and {ip2}")
     z1 = LibratoneZipp(ip1)
