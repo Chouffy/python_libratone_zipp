@@ -2,7 +2,7 @@ from python_libratone_zipp.LibratoneZipp import LibratoneZipp
 import socket, threading
 from python_libratone_zipp import LibratoneZipp, LibratoneMessage
 
-host = '192.168.1.31'
+host = '192.168.1.x'                    # IP of the Zipp
 
 _PRINT_EACH_BYTE = False
 
@@ -51,11 +51,11 @@ def thread_setup():
 thread_setup()
 
 # SET = port=7777, command, data
-# my_ba = LibratoneMessage.LibratoneMessage(command=15, data="20")
+my_ba = LibratoneMessage.LibratoneMessage(command=64, data="20")        # SET volume to 20
 # GET = port=7777, command, data, commandType=1
-my_ba = LibratoneMessage.LibratoneMessage(command=515, commandType=1)
+#my_ba = LibratoneMessage.LibratoneMessage(command=515, commandType=1)
 
-# my_ba.print_packet()
+my_ba.print_packet()    # Print received packets
 
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port_send = _UDP_CONTROL_PORT
