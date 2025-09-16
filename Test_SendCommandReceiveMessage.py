@@ -38,15 +38,15 @@ def listen_incoming_zipp_notification(socket, receive_port, ack_port=None):
 def thread_setup():
     # Thread for _UDP_RESULT_PORT
     my_socket_UDP_RESULT_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    my_socket_UDP_RESULT_PORT.bind(("", _UDP_RESULT_PORT))
     thread_UDP_RESULT_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_RESULT_PORT, _UDP_RESULT_PORT, _UDP_CONTROL_PORT])
     thread_UDP_RESULT_PORT.start()
-    my_socket_UDP_RESULT_PORT.bind(("", _UDP_RESULT_PORT))
 
     # Thread for _UDP_NOTIFICATION_RECEIVE_PORT
     my_socket_UDP_NOTIFICATION_RECEIVE_PORT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    my_socket_UDP_NOTIFICATION_RECEIVE_PORT.bind(("", _UDP_NOTIFICATION_RECEIVE_PORT))
     thread_UDP_NOTIFICATION_RECEIVE_PORT = threading.Thread(target=listen_incoming_zipp_notification,  name="Listen_incoming_"+str(_UDP_RESULT_PORT), args=[my_socket_UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_RECEIVE_PORT, _UDP_NOTIFICATION_SEND_PORT])
     thread_UDP_NOTIFICATION_RECEIVE_PORT.start()
-    my_socket_UDP_NOTIFICATION_RECEIVE_PORT.bind(("", _UDP_NOTIFICATION_RECEIVE_PORT))
 
 thread_setup()
 
