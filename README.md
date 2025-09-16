@@ -25,7 +25,7 @@ The only thing I'm very interested is defining Favorites!
     * [x] Create a Command Line Interface - CLI client
     * [x] Publish on PyPi
     * [x] Handle exit properly - but need max _KEEPALIVE_CHECK_PERIOD seconds to exit
-    * [ ] Make the module usable with multiple speaker
+    * [x] Make the module usable with multiple speaker
     * [ ] Use discovery method instead of fixed IP
     * [ ] Make the module compatible with async from Home Assistant
 * Playback status with Spotify & Radio
