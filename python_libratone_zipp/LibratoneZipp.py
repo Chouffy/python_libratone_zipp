@@ -164,6 +164,12 @@ _COMMAND_TABLE = {
         # Used for trigger
         '_get': 1284,   # from com.libratone.model.LSSDPNode, fetchChargingStatus
     },
+    'Group': {
+        # Observed: speaker -> phone notification on UDP 3333 with ASCII:
+        # "GROUPED,LINK <Name_Serial_Token>" (and likely UNGROUPED variants)
+        '_notif': 103,
+    },
+
 }
 
 # Check if host is up
@@ -185,7 +191,6 @@ class LibratoneZipp:
 
         # Configuration set by class client
         self.host = host
-
         
         # after self.host = host and normal state initialization
 
@@ -251,6 +256,11 @@ class LibratoneZipp:
         self.play_token = None
         self.play_type = None
 
+        # Grouping
+        self.group_status = None      # "GROUPED" / "UNGROUPED" / None
+        self.group_link_id = None     
+        self.group_last_notifier = None
+
         # Network
 
         ## Setup 3rd thread to make regular call to Zipp in order to update status in case of desync
@@ -288,6 +298,9 @@ class LibratoneZipp:
         self.play_title = None
         self.play_token = None
         self.play_type = None
+        self.group_status = None     
+        self.group_link_id = None     
+        self.group_last_notifier = None
 
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
     def exit(self):
@@ -355,6 +368,36 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['MuteStatus']['_get']: self.mutestatus = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
         elif command == _COMMAND_TABLE['BatteryLevel']['_get'] or command == _COMMAND_TABLE['BatteryLevel']['_get2']: self.batterylevel = data.decode()
+
+        elif command == _COMMAND_TABLE['Group']['_notif']:
+            try:
+                s = data.decode(errors="ignore").strip()
+            except Exception:
+                s = ""
+            # Defensive: some captures showed a leading ':' or '=' — strip non-alnum at start
+            while s and not s[0].isalnum():
+                s = s[1:]
+            # Expected patterns:
+            # "GROUPED,LINK <Name_Serial_Token>"
+            # (we’ll watch later for UNGROUPED/UNLINK variants)
+            if s.upper().startswith("GROUPED,LINK"):
+                self.group_status = "GROUPED"
+                parts = s.split(" ", 1)
+                self.group_link_id = parts[1].strip() if len(parts) > 1 else None
+            elif "UNGROUP" in s.upper() or "UNLINK" in s.upper():
+                self.group_status = "UNGROUPED"
+                self.group_link_id = None
+            else:
+                # Unknown group message; record raw for debugging
+                self.group_status = f"UNKNOWN({s})"
+            # Track who sent it (helps elect a coordinator in HA later)
+            try:
+                # We don’t get src IP here directly; add an arg to process_zipp_message or
+                # have SocketHub set a thread-local. Quick workaround: no-op for now.
+                pass
+            except:
+                pass
+
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
             else: pass
