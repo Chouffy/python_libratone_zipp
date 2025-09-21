@@ -764,3 +764,17 @@ class LibratoneZipp:
     def timer_cancel(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
     def sleep(self): return self.timer_set(0)
     def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="00")
+
+    def group_join(self, link_id: str) -> bool:
+        # 0x01F6 / 502 with payload "LINK <link_id>"
+        if not link_id:
+            return False
+        return self.set_control_command(_COMMAND_TABLE['Group']['_join'], f"LINK {link_id}")
+
+    def group_leave(self, link_id: str = None) -> bool:
+        # 0x01F7 / 503 also carried "LINK <link_id>" in your capture
+        lid = link_id or self.group_link_id
+        if not lid:
+            return False
+        return self.set_control_command(_COMMAND_TABLE['Group']['_leave'], f"LINK {lid}")
+
