@@ -12,6 +12,8 @@ import sys
 import time
 import socket
 import threading
+import re
+
 from . import LibratoneMessage
 
 from .socket_hub import SocketHub
@@ -165,11 +167,10 @@ _COMMAND_TABLE = {
         '_get': 1284,   # from com.libratone.model.LSSDPNode, fetchChargingStatus
     },
     'Group': {
-        # Observed: speaker -> phone notification on UDP 3333 with ASCII:
-        # "GROUPED,LINK <Name_Serial_Token>" (and likely UNGROUPED variants)
-        '_notif': 103,
-    },
-
+        '_notif': 103,   # UDP 3333: e.g. 'MASTER,LINK ...', 'SLAVE,LINK ...'
+        '_join':  502,   # 0x01F6: control write with 'LINK <link_id>'  (join)
+        '_leave': 503,   # 0x01F7: control write with 'LINK <link_id>'  (leave)
+   },
 }
 
 # Check if host is up
@@ -260,6 +261,7 @@ class LibratoneZipp:
         self.group_status = None      # "GROUPED" / "UNGROUPED" / None
         self.group_link_id = None     
         self.group_last_notifier = None
+        self.group_role = None        # "MASTER" | "SLAVE" | None
 
         # Network
 
@@ -301,6 +303,7 @@ class LibratoneZipp:
         self.group_status = None     
         self.group_link_id = None     
         self.group_last_notifier = None
+        self.group_role = None
 
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
     def exit(self):
@@ -377,26 +380,25 @@ class LibratoneZipp:
             # Defensive: some captures showed a leading ':' or '=' — strip non-alnum at start
             while s and not s[0].isalnum():
                 s = s[1:]
-            # Expected patterns:
-            # "GROUPED,LINK <Name_Serial_Token>"
-            # (we’ll watch later for UNGROUPED/UNLINK variants)
-            if s.upper().startswith("GROUPED,LINK"):
+            su = s.upper()
+            # Accept: "GROUPED,LINK ...", "MASTER,LINK ...", "SLAVE,LINK ..."
+            m = re.match(r'^(GROUPED|MASTER|SLAVE),LINK\s+(.+)$', su)
+            if m:
                 self.group_status = "GROUPED"
-                parts = s.split(" ", 1)
-                self.group_link_id = parts[1].strip() if len(parts) > 1 else None
-            elif "UNGROUP" in s.upper() or "UNLINK" in s.upper():
+                self.group_role = m.group(1)  # keep original role
+                # Use the original-cased string for link_id if possible
+                try:
+                    self.group_link_id = s.split(" ", 1)[1].strip()
+                except Exception:
+                    self.group_link_id = None
+            elif "UNGROUP" in su or "UNLINK" in su:               
                 self.group_status = "UNGROUPED"
                 self.group_link_id = None
+                self.group_role = None
             else:
                 # Unknown group message; record raw for debugging
                 self.group_status = f"UNKNOWN({s})"
-            # Track who sent it (helps elect a coordinator in HA later)
-            try:
-                # We don’t get src IP here directly; add an arg to process_zipp_message or
-                # have SocketHub set a thread-local. Quick workaround: no-op for now.
-                pass
-            except:
-                pass
+                self.group_role = None
 
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
