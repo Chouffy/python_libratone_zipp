@@ -94,3 +94,24 @@ class LibratoneMessage:
         print("dataLen", self.datalen)
         print("data", self.data)
         print("FULL MESSAGE", self.get_packet())
+
+    def _send_control(self, cmd: int, payload: str) -> bool:
+        msg = LibratoneMessage.LibratoneMessage() # still all a bit temp, will fix later
+        msg.set_remoteID(self._remoteID)              
+        msg.set_commandType_int(2)
+        msg.set_command_int(cmd)
+        msg.set_data(payload.encode())
+        packet = msg.get_packet()
+        # send via socket hub to UDP 7777
+        return self.socket_hub.send_packet(self.host, 7777, packet)
+
+    def group_join(self, link_id: str) -> bool:
+        return self._send_control(_COMMAND_TABLE['Group']['_join'], f"LINK {link_id}")
+
+    def group_leave(self, link_id: str = None) -> bool:
+        # 503 also carries "LINK <link_id>" in your capture
+        lid = link_id or self.group_link_id
+        if not lid:
+            return False
+        return self._send_control(_COMMAND_TABLE['Group']['_leave'], f"LINK {lid}")
+
