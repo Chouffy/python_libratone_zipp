@@ -33,25 +33,25 @@ def _get_hub():
                 _hub_singleton = SocketHub()
     return _hub_singleton
 
-_GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) and asking current values(like voicing)
+_GET_LIFECYCLE_VALUES = 1       # 3 seconds wait between asking lifecycle values (like all voicing) andasking current values(like voicing)
 
 _LOG_ALL_PACKET = False         # Log all packet
 _LOG_UNKNOWN_PACKET = False     # Log unknown packet
 _LOGGER_PRINT = False           # Redirect logger to stdout, otherwise standard Home Assistant logger
 
 if _LOGGER_PRINT:
-    _log_level=logging.DEBUG 
+    _log_level=logging.DEBUG
     _log_format = logging.Formatter('[%(asctime)s] [%(levelname)s] - %(message)s')
-    _LOGGER = logging.getLogger(__name__)                                  
-    _LOGGER.setLevel(_log_level)                                       
+    _LOGGER = logging.getLogger(__name__)
+    _LOGGER.setLevel(_log_level)
 
-    # writing to stdout                                                     
-    handler = logging.StreamHandler(sys.stdout)                             
-    handler.setLevel(_log_level)                                        
-    handler.setFormatter(_log_format)                                        
-    _LOGGER.addHandler(handler)                                            
+    # writing to stdout
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(_log_level)
+    handler.setFormatter(_log_format)
+    _LOGGER.addHandler(handler)
 
-    _LOGGER.debug("Logging has been setup")                                                   
+    _LOGGER.debug("Logging has been setup")
 else:
     _LOGGER = logging.getLogger("LibratoneZipp")
 
@@ -77,23 +77,23 @@ _UDP_NOTIFICATION_SEND_PORT = 3334       # Port to send ack to the speaker after
 _UDP_NOTIFICATION_RECEIVE_PORT = 3333    # Port to receive notification from the speaker
 
 _UDP_BUFFER_SIZE = 4096                 # 4096 in order to receive Channel data
-_KEEPALIVE_CHECK_PERIOD = 60            # Time in second between each keep-alive check 
+_KEEPALIVE_CHECK_PERIOD = 60            # Time in second between each keep-alive check
 
 # Define Zipp commands ID
 _COMMAND_TABLE = {
-    # com.libratone.model.LSSDPNode , fetchAllForWifi contain all useful fonctions 
+    # com.libratone.model.LSSDPNode , fetchAllForWifi contain all useful fonctions
     'Version': {
         '_get': 5,      # from com.libratone.model.LSSDPNode, fetchVersion
     },
     'CurrPowerMode': {
-        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - reply in dec, not ASCII - see _currpowermode_parsing 
+        '_get': 14,     # from com.libratone.model.LSSDPNode, fetchCurrPowerMode - reply in dec, not ASCII - see _currpowermode_parsing
         'awake': 48,    # from observation
         'sleeping': 50, # from observation
     },
     'Timer': {
         # Used for sleep timer
-        '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2" + j, j being seconds      
-        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see _timer_parse for parsing 
+        '_get': 15,     # from com.libratone.model.LSSDPNode, setOffTime - format for timer data is "2"+ j, j being seconds
+        '_set': 15,     # from com.libratone.model.LSSDPNode, setPowerMode - see _timer_parse for parsing
     },
     'PlayControl': {
         '_set': 40,     # # from com.libratone.model.LSSDPNode, setPlayControl - see below for data
@@ -130,7 +130,7 @@ _COMMAND_TABLE = {
         '_get': 278,    # from com.libratone.model.LSSDPNode, fetchPlayer
         '_set': 277,    # from com.libratone.model.LSSDPNode, setPlayer - see below for data
         # Favorites, captured:
-        # TODO check play_identity 
+        # TODO check play_identity
         'favorite': {
             '1': '{"isFromChannel":false,"play_identity":"1","play_subtitle":"1","play_title":"channel","play_type":"channel","token":""}',
             '2': '{"isFromChannel":false,"play_identity":"2","play_subtitle":"2","play_title":"channel","play_type":"channel","token":""}',
@@ -192,7 +192,7 @@ class LibratoneZipp:
 
         # Configuration set by class client
         self.host = host
-        
+
         # after self.host = host and normal state initialization
 
         if USE_SOCKET_HUB:
@@ -217,14 +217,14 @@ class LibratoneZipp:
             (self._listening_result_socket,
                 self._listening_result_thread) = self._get_new_socket(
                 receive_port=_UDP_RESULT_PORT
-            )            
+            )
         # TODO Update all variables to be set to Null when disconnect
 
         # Variables fixed for the lifecycle
         self.version = None
         self.name = None
         self.serialnumber = None
-        
+
         # Active variables
         self._currpowermode = None
         self._playstatus = None
@@ -237,13 +237,13 @@ class LibratoneZipp:
         self.mutestatus = None
 
         # Active variables as JSON list - see command table
-        self._voicing_list_json = None   
-        self._room_list_json = None      
+        self._voicing_list_json = None
+        self._room_list_json = None
         self._player_json = None
         self._channel_json = None
 
         # Calculated variables
-        self.state = None               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE in process_zipp_message() initiated from 
+        self.state = None               # STATE_OFF in self.state_refresh() or STATE_PLAY/STOP/PAUSE inprocess_zipp_message() initiated from
         self.room = None                # voicingId converted to Name for Room
         self.voicing = None             # voicingId converted to Name for Voicing
         self.room_list = None           # List of Room "name"
@@ -259,7 +259,7 @@ class LibratoneZipp:
 
         # Grouping
         self.group_status = None      # "GROUPED" / "UNGROUPED" / None
-        self.group_link_id = None     
+        self.group_link_id = None
         self.group_last_notifier = None
         self.group_role = None        # "MASTER" | "SLAVE" | None
 
@@ -281,12 +281,12 @@ class LibratoneZipp:
         self.volume = None
         self.batterylevel = None
         self.chargingstatus = None
-        self.timer = None           
+        self.timer = None
         self.signalstrenght = None
         self.devicecolor = None
         self.mutestatus = None
-        self._voicing_list_json = None   
-        self._room_list_json = None      
+        self._voicing_list_json = None
+        self._room_list_json = None
         self._player_json = None
         self._channel_json = None
         self.room = None
@@ -300,8 +300,8 @@ class LibratoneZipp:
         self.play_title = None
         self.play_token = None
         self.play_type = None
-        self.group_status = None     
-        self.group_link_id = None     
+        self.group_status = None
+        self.group_link_id = None
         self.group_last_notifier = None
         self.group_role = None
 
@@ -336,7 +336,7 @@ class LibratoneZipp:
 
     # Interpret message from Zipp
     def process_zipp_message(self, packet: bytearray, receive_port):
-        
+
         zipp_message = LibratoneMessage.LibratoneMessage(packet=packet)
         command = zipp_message.get_command_int()
         data = zipp_message.data
@@ -391,7 +391,7 @@ class LibratoneZipp:
                     self.group_link_id = s.split(" ", 1)[1].strip()
                 except Exception:
                     self.group_link_id = None
-            elif "UNGROUP" in su or "UNLINK" in su:               
+            elif "UNGROUP" in su or "UNLINK" in su:
                 self.group_status = "UNGROUPED"
                 self.group_link_id = None
                 self.group_role = None
@@ -424,7 +424,7 @@ class LibratoneZipp:
         _LOGGER.info("Stopped listening Zipp messages on %s", str(receive_port))
 
     # Create a socket, start a thread to manage incoming messages from receive_port and send a trigger to trigger_port
-    
+
     def _get_new_socket(self, receive_port, trigger_port=None, ack_port=None):
         """Create one UDP socket bound to receive_port, start its recv thread, and optionally send a trigger."""
         try:
@@ -465,7 +465,7 @@ class LibratoneZipp:
         except OSError as e:
             _LOGGER.warning("Socket error binding %s: %s", receive_port, e)
             return None
-           
+
     def send_command(self, port, command, commandType=None, data=None):
         """Send a command packet. In hub mode, use shared sockets; otherwise, legacy per-device socket.
         Returns True on successful send, False on failure.
@@ -560,7 +560,7 @@ class LibratoneZipp:
     def channel_get(self): return self.get_control_command(command=_COMMAND_TABLE['Channel']['_get'])
     def timer_get(self): return self.get_control_command(command=_COMMAND_TABLE['Timer']['_get'])
     def currpowermode_get(self): return self.get_control_command(command=_COMMAND_TABLE['CurrPowerMode']['_get'])
-    
+
     # Call all *get* functions above, except fixed values
     def get_all(self):
         self.currpowermode_get()
@@ -575,7 +575,7 @@ class LibratoneZipp:
         self.timer_get()
         self.playstatus_get()
 
-    # Call all *get* for values that are fixed for the lifecycle 
+    # Call all *get* for values that are fixed for the lifecycle
     def get_all_fixed_for_lifecycle(self):
         self.currpowermode_get()
         self.version_get()
@@ -657,7 +657,7 @@ class LibratoneZipp:
         else:
             _LOGGER.warning("voicingid_set: type must be either 'Voicing' or 'Room'")
             return False
-        
+
         try:
             for item in json_list:
                 if voicing_name == item['name']:
@@ -777,4 +777,3 @@ class LibratoneZipp:
         if not lid:
             return False
         return self.set_control_command(_COMMAND_TABLE['Group']['_leave'], f"LINK {lid}")
-
