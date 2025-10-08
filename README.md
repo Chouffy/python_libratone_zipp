@@ -4,7 +4,8 @@ This aims to control one or multiple Libratone Zipp speaker with a Python librar
 
 Install it with `pip install python-libratone-zipp` - [pip page](https://pypi.org/project/python-libratone-zipp/)
 
-Tested with Libratone Zipp 1, firmware 809.
+Tested with Libratone Zipp 1, firmware 809, 879.
+
 
 ## Usage
 
@@ -14,6 +15,7 @@ Other files:
 
 * `Test_SendCommandReceiveMessage.py` is used to shoot one command for tests purposes.
 * `Test_LibratoneMessage.py` is to check LibratoneMessage class against a real message
+* `Test_Sockethub.py` is to check if you can recieve information from multiple speakers at once
 
 ## Functionality coverage
 
@@ -78,7 +80,7 @@ The only thing I'm very interested is defining Favorites!
     * [x] Retrieve current Wi-Fi information
     * [ ] Set Wi-Fi configuration
 * Multi-room
-    * [ ] Implement SoundSpace Link
+    * [x] Implement SoundSpace Link
 
 ### Unimplemented commands
 

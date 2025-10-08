@@ -12,6 +12,8 @@ import sys
 import time
 import socket
 import threading
+import re
+
 from . import LibratoneMessage
 
 from .socket_hub import SocketHub
@@ -164,6 +166,11 @@ _COMMAND_TABLE = {
         # Used for trigger
         '_get': 1284,   # from com.libratone.model.LSSDPNode, fetchChargingStatus
     },
+    'Group': {
+        '_notif': 103,   # UDP 3333: e.g. 'MASTER,LINK ...', 'SLAVE,LINK ...'
+        '_join':  502,   # 0x01F6: control write with 'LINK <link_id>'  (join)
+        '_leave': 503,   # 0x01F7: control write with 'LINK <link_id>'  (leave)
+   },
 }
 
 # Check if host is up
@@ -185,7 +192,6 @@ class LibratoneZipp:
 
         # Configuration set by class client
         self.host = host
-
         
         # after self.host = host and normal state initialization
 
@@ -251,6 +257,12 @@ class LibratoneZipp:
         self.play_token = None
         self.play_type = None
 
+        # Grouping
+        self.group_status = None      # "GROUPED" / "UNGROUPED" / None
+        self.group_link_id = None     
+        self.group_last_notifier = None
+        self.group_role = None        # "MASTER" | "SLAVE" | None
+
         # Network
 
         ## Setup 3rd thread to make regular call to Zipp in order to update status in case of desync
@@ -288,6 +300,10 @@ class LibratoneZipp:
         self.play_title = None
         self.play_token = None
         self.play_type = None
+        self.group_status = None     
+        self.group_link_id = None     
+        self.group_last_notifier = None
+        self.group_role = None
 
     # Close the two socket thread by changing the flag and sending two packet to receive two answer on 2 ports
     def exit(self):
@@ -355,6 +371,35 @@ class LibratoneZipp:
         elif command == _COMMAND_TABLE['MuteStatus']['_get']: self.mutestatus = data.decode()
         elif command == _COMMAND_TABLE['DeviceColor']['_get'] or command == _COMMAND_TABLE['DeviceColor']['_set']: self.devicecolor = data.decode()
         elif command == _COMMAND_TABLE['BatteryLevel']['_get'] or command == _COMMAND_TABLE['BatteryLevel']['_get2']: self.batterylevel = data.decode()
+
+        elif command == _COMMAND_TABLE['Group']['_notif']:
+            try:
+                s = data.decode(errors="ignore").strip()
+            except Exception:
+                s = ""
+            # Defensive: some captures showed a leading ':' or '=' — strip non-alnum at start
+            while s and not s[0].isalnum():
+                s = s[1:]
+            su = s.upper()
+            # Accept: "GROUPED,LINK ...", "MASTER,LINK ...", "SLAVE,LINK ..."
+            m = re.match(r'^(GROUPED|MASTER|SLAVE),LINK\s+(.+)$', su)
+            if m:
+                self.group_status = "GROUPED"
+                self.group_role = m.group(1)  # keep original role
+                # Use the original-cased string for link_id if possible
+                try:
+                    self.group_link_id = s.split(" ", 1)[1].strip()
+                except Exception:
+                    self.group_link_id = None
+            elif "UNGROUP" in su or "UNLINK" in su:               
+                self.group_status = "UNGROUPED"
+                self.group_link_id = None
+                self.group_role = None
+            else:
+                # Unknown group message; record raw for debugging
+                self.group_status = f"UNKNOWN({s})"
+                self.group_role = None
+
         else:
             if _LOG_UNKNOWN_PACKET: self.log_zipp_messages(command=command, data=data, port=receive_port)
             else: pass
@@ -719,3 +764,18 @@ class LibratoneZipp:
     def timer_cancel(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="F0")
     def sleep(self): return self.timer_set(0)
     def wakeup(self): return self.set_control_command(command=_COMMAND_TABLE['Timer']['_set'], data="00")
+
+    def group_join(self, link_id: str) -> bool:
+        # 0x01F6 / 502 with payload "LINK <link_id>"
+        if not link_id:
+            return False
+        return self.set_control_command(_COMMAND_TABLE['Group']['_join'], f"LINK {link_id}")
+
+    def group_leave(self, link_id: str = None) -> bool:
+        # 0x01F7 / 503 also carried "LINK <link_id>" in your capture
+        lid = link_id or self.group_link_id
+        if not lid:
+            return False
+        return self.set_control_command(_COMMAND_TABLE['Group']['_leave'], f"LINK {lid}")
+
+
