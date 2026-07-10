@@ -742,6 +742,11 @@ class LibratoneZipp:
         except:
             pass
 
+        # An empty or "null" Player payload decodes to None, so bail out and
+        # keep the play_* fields at their initialized None values.
+        if not isinstance(self._player_json, dict):
+            return
+
         self.isFromChannel = self._player_json.get('isFromChannel', '')
         self.play_identity = self._player_json.get('play_identity', '')
         self.play_preset_available = self._player_json.get('play_preset_available', '')
