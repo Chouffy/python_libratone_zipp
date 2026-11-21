@@ -62,7 +62,7 @@ Notes:
     * [x] Retrieve volume
     * [x] Retrieve current playback source (Spotify, radio favorite, Bluetooth, DLNA)
     * [x] Retrieve current title, artist, album, playlist, cover
-    * [x] Retrieve mute status (setting it is unknown)
+    * [x] Retrieve mute status (read-only: the speaker mutes itself when its touch panel is held)
 * Playback with Bluetooth or USB
     * [x] Retrieve basic playback status: playing / paused (LSSDP; cmd 51 reports Bluetooth as paused)
     * [x] Retrieve media type: Bluetooth, radio, streaming, DLNA (aux untested)
@@ -100,11 +100,30 @@ Notes:
     * [x] Implement SoundSpace Link (join / leave)
     * [x] Retrieve group state and master at any time (LSSDP)
     * [x] Set the audio channel: stereo / left / right
+* Firmware, setup, factory reset (open - contributions welcome)
+    * [ ] Firmware update status (cmd 65 JSON notifications; the web UI `cgi?Update` also accepts local uploads)
+    * [ ] Wi-Fi setup of a factory-new speaker without the app (setup hotspot + web UI `cgi?SetNet`)
+    * [ ] Factory reset (`SET 150` is known; deliberately not implemented)
+
+### Ports
+
+Port | Direction | Use
+-|-|-
+7777/udp | to speaker | commands
+7778/udp | to controller | replies (fixed port, whatever the source port), also LSSDP replies
+3333/udp | to controller | notifications, acknowledged to the speaker's 3334/udp
+1800/udp | both | LSSDP status: broadcast every ~10 s, answers a unicast M-SEARCH
+49152/tcp | to speaker | UPnP/DLNA media renderer (`/description.xml`, AVTransport)
+80/tcp | to speaker | web UI: `cgi?Overview`, `cgi?Network` (Wi-Fi setup), `cgi?Update` (firmware)
+8038/tcp | to speaker | Spotify Connect (zeroconf, eSDK)
 
 ### Commands
 
 `aaaa | type (1 get, 2 set) | cmd (2 bytes) | status | random id (2) | length (2) | data`, sent to UDP 7777.
-Replies go to UDP 7778, notifications to UDP 3333 (acknowledged to the speaker's 3334).
+
+Function names in the second column come from the decompiled Android app (`com.libratone.model.LSSDPNode`,
+found by Chouffy and [Benjamin Hanke](https://www.loxwiki.eu/display/LOX/Libratone+Zipp+WLan+Lautsprecher)).
+The notes, and the commands without an app name, come from packet captures and tests (2025-2026).
 
 command|function|notes
 -|-|-
@@ -130,7 +149,7 @@ command|function|notes
 504 / 505 | pair state / notification | `UNPAIRED`
 512 | audio channel | SET 0 stereo / 1 left / 2 right; read via LSSDP
 516 / 518, 517 / 519, 524 / 525 | voicing, room: get / set / list |
-520 | fetchMuteStatus |
+520 | fetchMuteStatus | `MUTE` / `UNMUTE`, read-only (touch panel held)
 528 | ? | `300`
 529 | signal strength | `-89,-34,5/5`
 530 | fetchOtaAutoDownLoadStatus |
@@ -140,11 +159,16 @@ command|function|notes
 770 / 771 | color get / set | 1001 Pepper Black, 1002 Salty Grey, 1003 Steel Blue, 1004 Raspberry Red, 1005 Almond Brown, 1006 Icy Blue (wool covers); 2001 Cloudy Grey, 2002 Graphite Grey, 2003 Victory Red, 2004 Deep Lagoon, 2005 Sangria, 2006 Atlantic Deep, 2007 Signal, 2008 Nude, 2009 Pastel Blue (mesh covers)
 1284| fetchChargingStatus |
 1285| fetchPrivateMode |
-1536 - 1538 | USB current id / play mode / song info |
+1536 - 1538 | fetchUsbCurrentPlayId / fetchUsbPlayMode / fetchUsbSongInfo |
+
+Still unknown (the app queries them, replies are empty or a bare value; contributions welcome):
+`260` (`0`), `288` (empty), `515` (`0`), `528` (`300`, auto-standby seconds?), `532` (`00 00`), `535` (`ff ff ff ff`),
+`1286` (the app SETs `0` / `2`), `1541` (empty), and what `504` (`UNPAIRED`) is for.
 
 LSSDP: a unicast `M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1800\r\nPROTOCOL:Version 1.0` to
 `<speaker>:1800` is answered on UDP 7778 with `DeviceState: <role F/G/M/S>,<channel S/L/R>,<playing P/N>`,
-`ZoneID: LINK <link id>`, `DeviceID` (MAC) and more.
+`ZoneID: LINK <link id>`, `DeviceID` (MAC) and more. Note: a speaker whose control service hung still answered
+LSSDP, so it is not a sign of life; the library uses command replies for availability.
 
 ## Acknowledgment
 

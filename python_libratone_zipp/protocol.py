@@ -71,7 +71,7 @@ class Cmd(IntEnum):
     ROOM = 517              # current room placement id, e.g. shelf
     VOICING_SET = 518
     ROOM_SET = 519
-    MUTE = 520              # MUTE / UNMUTE
+    MUTE = 520              # MUTE / UNMUTE (read-only; the speaker mutes when the touch panel is held)
     VOICING_LIST = 524      # JSON list
     ROOM_LIST = 525         # JSON list
     SIGNAL = 529            # "-89,-34,5/5" (last part = bars)
@@ -104,6 +104,7 @@ POLL_FAST: tuple[Cmd, ...] = (
     Cmd.PLAYER,
     Cmd.VOICING,
     Cmd.TIMER,              # remaining sleep timer, counts down
+    Cmd.MUTE,               # set by holding the speaker's touch panel; read-only on the network
 )
 
 # Commands polled rarely (identity, lists, slow-changing values)
@@ -119,7 +120,6 @@ POLL_SLOW: tuple[Cmd, ...] = (
     Cmd.CHARGING,
     Cmd.SIGNAL,
     Cmd.SSID,
-    Cmd.MUTE,
     Cmd.COLOR,
 )
 
