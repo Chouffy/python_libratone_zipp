@@ -1,78 +1,81 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Command line client for python_libratone_zipp.
 
+    python CLI.py 192.168.1.20 status
+    python CLI.py 192.168.1.20 watch                 # print every change until Ctrl+C
+    python CLI.py 192.168.1.20 play|pause|stop|next|prev
+    python CLI.py 192.168.1.20 volume 25
+    python CLI.py 192.168.1.20 favorite 3
+    python CLI.py 192.168.1.20 sleep|wake
+    python CLI.py 192.168.1.20 channel stereo|left|right
+
+Needs UDP 7778 and 3333 free on this machine (the speakers always answer to these ports).
 """
-Command-Line Interface for the `python_libratone_zipp` module.
-"""
+from __future__ import annotations
 
-from python_libratone_zipp import LibratoneZipp
+import argparse
+import asyncio
 
-zipp1 = LibratoneZipp(host='192.168.xx.xx')     # IP of the first Zipp
-zipp2 = LibratoneZipp(host="192.168.xx.yy")     # IP of the second Zipp. Can be left as-is if there's only on device.
+from python_libratone_zipp import LibratoneHub, LibratoneSpeaker
 
-speakers = [zipp1, zipp2]
 
-while True:
-    zipp = speakers[int(input(f"Input the desired speaker from 1 to {len(speakers)}: ")) - 1]
-    user_choice = input("Input your command: play, pause, stop, next, prev, sleep, wakeup, fav_play, player, voicing, room, volume, name_set, info, channel, timer, exit? ")
+def describe(spk: LibratoneSpeaker) -> str:
+    group = f"{spk.group_role} of {spk.group_link_id}" if spk.group_link_id else "not linked"
+    return (
+        f"{spk.name} ({spk.serial}, firmware {spk.version}) at {spk.host}\n"
+        f"  state:   {'sleeping' if spk.is_sleeping else spk.effective_status}   source: {spk.source}\n"
+        f"  media:   {spk.media_title} - {spk.media_artist}\n"
+        f"  volume:  {spk.volume}   voicing: {spk.voicing}   room: {spk.room}   channel: {spk.channel}\n"
+        f"  group:   {group}\n"
+        f"  battery: {spk.battery}%   wifi: {spk.ssid} ({spk.wifi_bars}/5)   color: {spk.color}\n"
+        f"  favorites: {', '.join(spk.favorite_names)}"
+    )
 
-    if user_choice == "play": zipp.play()
-    elif user_choice == "pause": zipp.pause()
-    elif user_choice == "stop": zipp.stop()
-    elif user_choice == "next": zipp.next()
-    elif user_choice == "prev": zipp.prev()
-    elif user_choice == "sleep": zipp.sleep()
-    elif user_choice == "wakeup": zipp.wakeup()
 
-    elif user_choice == "fav_play": zipp.favorite_play(input("Input favorite ID: 1, 2, ... 5? "))
-    elif user_choice == "volume": zipp.volume_set(input("Input volume 0...100? "))
-    elif user_choice == "name_set": zipp.name_set(input("Input device name? "))
+async def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("host")
+    ap.add_argument("command", nargs="?", default="status")
+    ap.add_argument("value", nargs="?")
+    a = ap.parse_args()
 
-    elif user_choice == "voicing":
-        print("\nList of voicing:")
-        print(*zipp.voicing_list, sep= ", ")
-        if zipp.voicing != None: print("Current voicing:", zipp.voicing)
-        zipp.voicing_set(input("\nInput voicing name, not ID: "))
+    hub = LibratoneHub()
+    await hub.start()
+    spk = hub.add_speaker(a.host, serial=None, name=None)
+    try:
+        if not await hub.probe(a.host, timeout=3):
+            raise SystemExit(f"{a.host} does not answer")
+        await asyncio.sleep(2)  # let the first full refresh arrive
+        cmd = a.command
+        if cmd == "status":
+            print(describe(spk))
+        elif cmd == "watch":
+            spk.add_listener(lambda: print("---\n" + describe(spk)))
+            print(describe(spk))
+            await asyncio.Event().wait()
+        elif cmd in ("play", "pause", "stop", "next", "prev"):
+            spk.play_control(cmd)
+        elif cmd == "volume":
+            spk.set_volume(int(a.value))
+        elif cmd == "favorite":
+            spk.play_favorite(a.value)
+        elif cmd == "sleep":
+            spk.sleep()
+        elif cmd == "wake":
+            spk.wake()
+        elif cmd == "channel":
+            spk.set_channel(a.value)
+        else:
+            raise SystemExit(f"unknown command {cmd}")
+        if cmd not in ("status", "watch"):
+            await asyncio.sleep(2)
+            print(describe(spk))
+    finally:
+        await hub.stop()
 
-    elif user_choice == "room":
-        print("\nList of room:")
-        print(*zipp.room_list, sep= ", ")
-        if zipp.room != None: print("Current room:", zipp.room)
-        zipp.room_set(input("\nInput room setting name, not ID: "))
 
-    elif user_choice == "player":
-        if zipp.isFromChannel != None: print("isFromChannel:", zipp.isFromChannel)
-        if zipp.play_identity != None: print("play_identity:", zipp.play_identity)
-        if zipp.play_preset_available != None: print("play_preset_available:", zipp.play_preset_available)
-        if zipp.play_subtitle != None: print("play_subtitle:", zipp.play_subtitle)
-        if zipp.play_title != None: print("play_title:", zipp.play_title)
-        if zipp.play_token != None: print("play_token:", zipp.play_token)
-        if zipp.play_type != None: print("play_type:", zipp.play_type)
-
-    elif user_choice == "channel":
-        print("Content of channel:", zipp._channel_json)
-
-    elif user_choice == "timer_cancel": zipp.timer_cancel()
-    elif user_choice == "timer":
-        print("Configured timer:", zipp.timer)
-        zipp.timer_set(input("Input timer in seconds:"))
-
-    elif user_choice == "info":
-        if zipp.state   != None: print("State:", zipp.state)
-        if zipp.name != None: print("Name:", zipp.name)
-        if zipp.version != None: print("Version:", zipp.version)
-        if zipp.volume  != None: print("Volume:", zipp.volume)
-        if zipp.serialnumber != None: print("SerialNumber:", zipp.serialnumber)
-        if zipp.devicecolor != None: print("DeviceColor:", zipp.devicecolor)
-        if zipp.voicing != None: print("Voicing:", zipp.voicing)
-        if zipp.room != None: print("Room:", zipp.room)
-        if zipp.chargingstatus  != None: print("Charging status:", zipp.chargingstatus)
-        if zipp.batterylevel  != None: print("BatteryLevel:", zipp.batterylevel)
-        if zipp.timer  != None: print("Timer:", zipp.timer)
-        if zipp.signalstrenght != None: print("SignalStrength:", zipp.signalstrenght)
-        if zipp.mutestatus != None: print("MuteStatus:", zipp.mutestatus)
-        
-    elif user_choice == "exit":
-        break
-        
-zipp.exit()
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass

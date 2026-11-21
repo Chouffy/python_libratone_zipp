@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python_libratone_zipp"
+version = "5.0.0"
+description = "Control one or multiple Libratone Zipp speakers over the local network (asyncio)"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.12"
+authors = [{ name = "Chouffy", email = "git@chouffy.net" }, { name = "Calyorbro" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Framework :: AsyncIO",
+    "Topic :: Home Automation",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/Chouffy/python_libratone_zipp"
+"Bug Tracker" = "https://github.com/Chouffy/python_libratone_zipp/issues"
+"Home Assistant integration" = "https://github.com/Chouffy/home_assistant_libratone_zipp"
+
+[tool.setuptools]
+packages = ["python_libratone_zipp"]
+
+[tool.setuptools.package-data]
+python_libratone_zipp = ["py.typed"]
