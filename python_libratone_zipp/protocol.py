@@ -71,7 +71,7 @@ class Cmd(IntEnum):
     ROOM = 517              # current room placement id, e.g. shelf
     VOICING_SET = 518
     ROOM_SET = 519
-    MUTE = 520              # MUTE / UNMUTE (read-only; the speaker mutes when the touch panel is held)
+    MUTE = 520              # MUTE / UNMUTE; NOT the touch-panel mute (stays UNMUTE), unused by the app
     VOICING_LIST = 524      # JSON list
     ROOM_LIST = 525         # JSON list
     SIGNAL = 529            # "-89,-34,5/5" (last part = bars)
@@ -80,6 +80,7 @@ class Cmd(IntEnum):
     COLOR = 770
     COLOR_SET = 771         # SET '<code>', e.g. 2002 (verified)
     CHARGING = 1284
+    PRIVATE_MODE = 1285     # '1' while muted by holding the touch panel ('private mode'), '0' otherwise; GET + notification
 
 
 PLAY_CONTROL = {"play": "PLAY", "pause": "PAUSE", "stop": "STOP", "next": "NEXT", "prev": "PREV"}
@@ -104,7 +105,7 @@ POLL_FAST: tuple[Cmd, ...] = (
     Cmd.PLAYER,
     Cmd.VOICING,
     Cmd.TIMER,              # remaining sleep timer, counts down
-    Cmd.MUTE,               # set by holding the speaker's touch panel; read-only on the network
+    Cmd.PRIVATE_MODE,       # touch-panel mute (also pushed as a notification); read-only on the network
 )
 
 # Commands polled rarely (identity, lists, slow-changing values)

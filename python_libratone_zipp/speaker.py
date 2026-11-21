@@ -70,7 +70,8 @@ class LibratoneSpeaker:
         self.battery: int | None = None
         self.charging: str | None = None
         self.signal: str | None = None
-        self.muted: bool | None = None
+        self.muted: bool | None = None       # touch-panel mute ('private mode', cmd 1285)
+        self.mute_status: str | None = None  # cmd 520 raw (MUTE/UNMUTE), not the touch-panel mute
         self.timer: int | None = None
         self.group_role: str | None = None
         self.group_link_id: str | None = None
@@ -285,8 +286,10 @@ class LibratoneSpeaker:
                 return self._set("signal", text)
             if cmd == Cmd.SSID:
                 return self._set("ssid", text.strip('"').strip() or None)
+            if cmd == Cmd.PRIVATE_MODE:
+                return self._set("muted", text[:1] == "1")
             if cmd == Cmd.MUTE:
-                return self._set("muted", text.upper() == "MUTE")
+                return self._set("mute_status", text)
             if cmd == Cmd.TIMER:
                 return self._set("timer", p.parse_timer(frame.data))
             if cmd == Cmd.GROUP:

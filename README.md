@@ -62,7 +62,7 @@ Notes:
     * [x] Retrieve volume
     * [x] Retrieve current playback source (Spotify, radio favorite, Bluetooth, DLNA)
     * [x] Retrieve current title, artist, album, playlist, cover
-    * [x] Retrieve mute status (read-only: the speaker mutes itself when its touch panel is held)
+    * [x] Retrieve mute status (read-only: holding the touch panel mutes the speaker, "private mode", cmd 1285)
 * Playback with Bluetooth or USB
     * [x] Retrieve basic playback status: playing / paused (LSSDP; cmd 51 reports Bluetooth as paused)
     * [x] Retrieve media type: Bluetooth, radio, streaming, DLNA (aux untested)
@@ -149,7 +149,7 @@ command|function|notes
 504 / 505 | pair state / notification | `UNPAIRED`
 512 | audio channel | SET 0 stereo / 1 left / 2 right; read via LSSDP
 516 / 518, 517 / 519, 524 / 525 | voicing, room: get / set / list |
-520 | fetchMuteStatus | `MUTE` / `UNMUTE`, read-only (touch panel held)
+520 | fetchMuteStatus | `MUTE` / `UNMUTE`; stays `UNMUTE` when muted by touch, not used by the app
 528 | ? | `300`
 529 | signal strength | `-89,-34,5/5`
 530 | fetchOtaAutoDownLoadStatus |
@@ -158,12 +158,12 @@ command|function|notes
 769 | serial number |
 770 / 771 | color get / set | 1001 Pepper Black, 1002 Salty Grey, 1003 Steel Blue, 1004 Raspberry Red, 1005 Almond Brown, 1006 Icy Blue (wool covers); 2001 Cloudy Grey, 2002 Graphite Grey, 2003 Victory Red, 2004 Deep Lagoon, 2005 Sangria, 2006 Atlantic Deep, 2007 Signal, 2008 Nude, 2009 Pastel Blue (mesh covers)
 1284| fetchChargingStatus |
-1285| fetchPrivateMode |
+1285| fetchPrivateMode | **touch-panel mute**: `1` while muted by holding the touch panel, `0` otherwise; GET and notification
 1536 - 1538 | fetchUsbCurrentPlayId / fetchUsbPlayMode / fetchUsbSongInfo |
 
 Still unknown (the app queries them, replies are empty or a bare value; contributions welcome):
 `260` (`0`), `288` (empty), `515` (`0`), `528` (`300`, auto-standby seconds?), `532` (`00 00`), `535` (`ff ff ff ff`),
-`1286` (the app SETs `0` / `2`), `1541` (empty), and what `504` (`UNPAIRED`) is for.
+`1286` (the app SETs `0` / `2`), `1541` (empty), what `504` (`UNPAIRED`) is for, and the values of `1284` (charging: 0-3).
 
 LSSDP: a unicast `M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1800\r\nPROTOCOL:Version 1.0` to
 `<speaker>:1800` is answered on UDP 7778 with `DeviceState: <role F/G/M/S>,<channel S/L/R>,<playing P/N>`,
