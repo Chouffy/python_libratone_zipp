@@ -187,6 +187,8 @@ class LibratoneHub:
                 return
 
         changed = spk.handle_frame(frame)
+        if port == p.PORT_NOTIFY and frame.cmd == Cmd.PLAYER:
+            spk.handle_player_notification(frame)
         if frame.cmd == Cmd.GROUP:
             # group membership affects every speaker's group_members
             for s in self.speakers:

@@ -86,11 +86,36 @@ class LibratoneSpeaker:
         self.model: str | None = None        # e.g. LTH300 (UPnP description), set by the application
 
         self._listeners: list[Callable[[], None]] = []
+        self._favorite_listeners: list[Callable[[int, str | None, bool], None]] = []
+        self._own_favorite_at = 0.0
 
     # ------------------------------------------------------------------ listeners
     def add_listener(self, cb: Callable[[], None]) -> Callable[[], None]:
         self._listeners.append(cb)
         return lambda: self._listeners.remove(cb) if cb in self._listeners else None
+
+    def add_favorite_listener(self, cb: Callable[[int, str | None, bool], None]) -> Callable[[], None]:
+        """cb(slot, name, started_by_us) whenever a favorite is started: on the speaker (heart button),
+        from the app, or by us. Fires once per start, also for favorites that then fail to play."""
+        self._favorite_listeners.append(cb)
+        return lambda: self._favorite_listeners.remove(cb) if cb in self._favorite_listeners else None
+
+    def handle_player_notification(self, frame: p.Frame) -> None:
+        """The speaker pushes NOTIFY 278 (player) once whenever a favorite starts, with
+        isFromChannel true and play_identity = slot. Verified with the heart button on a Zipp."""
+        data = _json(frame.text)
+        if not isinstance(data, dict) or not data.get("isFromChannel"):
+            return
+        slot = str(data.get("play_identity") or "")
+        if slot not in {"1", "2", "3", "4", "5"}:
+            return
+        ours = time.monotonic() - self._own_favorite_at < 5
+        name = data.get("play_title") or None
+        for cb in list(self._favorite_listeners):
+            try:
+                cb(int(slot), name, ours)
+            except Exception:  # pragma: no cover
+                _LOGGER.exception("Favorite listener for %s failed", self)
 
     def notify(self) -> None:
         for cb in list(self._listeners):
@@ -458,6 +483,7 @@ class LibratoneSpeaker:
              "play_title": "channel", "play_type": "channel", "token": ""},
             separators=(",", ":"),
         )
+        self._own_favorite_at = time.monotonic()
         self._send(Cmd.PLAYER_SET, payload)
         self._after_command()
         return True

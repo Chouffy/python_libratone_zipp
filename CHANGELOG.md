@@ -11,6 +11,7 @@ Breaking: new asyncio API, the threaded `LibratoneZipp` class is gone.
 * Source detection (Spotify, radio favorite, Bluetooth, DLNA), Bluetooth playback shown as playing
 * New: audio channel (stereo/left/right), save favorite, rename, color get/set, sleep timer countdown,
   Wi-Fi network/signal, MAC, app-style link ids
+* Favorite-started callback (heart button / app / us), `add_favorite_listener`
 * Mute state: the touch-panel mute ("private mode", cmd 1285), read-only, pushed by the speaker and polled
 * Packaging: `pyproject.toml`, `py.typed`, Python >= 3.12
 

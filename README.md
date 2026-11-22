@@ -82,6 +82,8 @@ Notes:
 * Favorites
     * [x] Play a Favorite, list favorites by name
     * [x] Set a Favorite (radio station playing now; Spotify content not yet)
+    * [x] Notice when a favorite is started on the speaker (heart button) or in the app (`add_favorite_listener`)
+    * [ ] Favorites with any stream URL: not possible, the speaker only plays vTuner ids (tested)
 * Extended current playback info
     * [ ] Set Source (not possible over the network, except favorites)
     * [x] Retrieve current source
@@ -128,7 +130,7 @@ The notes, and the commands without an app name, come from packet captures and t
 command|function|notes
 -|-|-
 5   | version |
-10  | fetchSourceInfo | 7 bytes: [0] mode (0x34 streaming, 0x3f radio favorite, 0x41 local/Bluetooth, 0x3b group slave, 0x32 DLNA), [2] 0x08 = Bluetooth playing
+10  | fetchSourceInfo | 7 bytes: [0] mode (0x34 streaming, 0x3f radio favorite, 0x41 local/Bluetooth, 0x3b group slave, 0x32 DLNA), [1] change counter, [2] 0x08 = Bluetooth playing
 14  | current power mode | 0 awake, 1 idle, 2 sleeping
 15  | timer | SET `2<seconds>` start, `F0` cancel, `20` sleep now, `00` wake; GET `'2'` + remaining seconds (uint16 LE)
 40  | play control | PLAY / PAUSE / STOP / NEXT / PREV

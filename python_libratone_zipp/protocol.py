@@ -47,7 +47,8 @@ class Cmd(IntEnum):
     """Known command ids (names from com.libratone.model.LSSDPNode where known)."""
 
     VERSION = 5
-    SOURCE_STATE = 10       # 7 bytes: [0] mode (MODE_*), [2] 0x08 = Bluetooth playing; rest unknown
+    SOURCE_STATE = 10       # 7 bytes: [0] mode (MODE_*), [1] change counter (+1 per source/favorite change),
+                            # [2] 0x08 = Bluetooth playing; rest unknown
     SOURCE_MODE = 50        # notification carrying byte 0 of SOURCE_STATE (GET returns nothing)
     POWER_MODE = 14         # '0' awake, '1' transitional, '2' sleeping
     TIMER = 15              # sleep timer: SET "2<seconds>" / "F0" cancel / "20" sleep now / "00" wake;
