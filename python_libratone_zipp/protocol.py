@@ -76,7 +76,7 @@ class Cmd(IntEnum):
     VOICING_LIST = 524      # JSON list
     ROOM_LIST = 525         # JSON list
     SIGNAL = 529            # "-89,-34,5/5" (last part = bars)
-    SSID = 539              # '"FRITZ!Box 7272"' (with quotes)
+    SSID = 539              # '"Your-WiFi-SSID"' (with quotes)
     SERIAL = 769
     COLOR = 770
     COLOR_SET = 771         # SET '<code>', e.g. 2002 (verified)
