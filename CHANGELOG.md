@@ -5,7 +5,8 @@
 Breaking: new asyncio API, the threaded `LibratoneZipp` class is gone.
 
 * `LibratoneHub` (shared UDP sockets, polling, routing) and `LibratoneSpeaker` (state + commands)
-* Speakers identified by serial number; followed across DHCP IP changes (unknown-IP re-identification, subnet sweep)
+* Speakers identified by serial number; followed across DHCP IP changes via their LSSDP announcements and a
+  search request (no scanning); optional subnet sweep (`auto_rediscover`, off by default)
 * Availability from the last reply; parse errors never stop the receive path
 * Group state, master/slave, stereo channel and the real playing flag from the LSSDP status (UDP 1800)
 * Source detection (Spotify, radio favorite, Bluetooth, DLNA), Bluetooth playback shown as playing

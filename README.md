@@ -14,8 +14,11 @@ Version 5 replaces the threaded `LibratoneZipp` class with an asyncio API and no
 * `LibratoneHub` owns the UDP sockets (the speakers always answer to ports `7778` and `3333`, so one hub per
   machine), polls the speakers and routes replies.
 * `LibratoneSpeaker` holds the state of one speaker and sends commands. Speakers are identified by **serial
-  number**: when a speaker gets a new IP from DHCP, the hub finds it again (unknown IP reporting a known serial,
-  or a small subnet sweep while a speaker is missing).
+  number**: when a speaker gets a new IP from DHCP, the hub finds it again without scanning. Every speaker (also a
+  group slave) announces itself on UDP 1800 (LSSDP) about every 10 s, and while a speaker is missing the hub sends
+  one LSSDP search request (a single broadcast, like the app). An optional subnet sweep
+  (`LibratoneHub(auto_rediscover=True)` or `add_speaker(..., rediscover=True)`, **off by default**) covers setups
+  where broadcasts don't reach the host, e.g. Docker without host networking.
 * Group (SoundSpace Link) state, stereo channel and the real "playing" flag come from the speaker's LSSDP status
   (UDP 1800), so they are known right after start-up.
 

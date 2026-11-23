@@ -205,7 +205,7 @@ def parse_lssdp(packet: bytes) -> dict[str, str] | None:
     return fields if "DeviceState" in fields else None
 
 
-# SOURCE_STATE byte 0 (see libratone-sniffing/weekend/findings/2026-11-20_sources)
+# SOURCE_STATE byte 0 (from packet captures; verified on a Zipp with Spotify, radio favorites, Bluetooth and DLNA)
 MODE_STREAM = 0x34      # network streaming, details in PLAYER play_type (e.g. spotify)
 MODE_RADIO = 0x3F       # radio favorite (PLAYER isFromChannel / play_identity = favorite number)
 MODE_LOCAL = 0x41       # Bluetooth or idle
@@ -236,7 +236,7 @@ def channel_from_lssdp(fields: dict[str, str]) -> str | None:
 def group_from_lssdp(fields: dict[str, str]) -> GroupInfo:
     """DeviceState 'M,..' / 'S,..' / 'G,..' / 'F,..' = master / slave / grouped (linked, roles not assigned
     yet: seen while nothing plays) / free; ZoneID = 'LINK <link id>'.
-    Verified with two Zipps (firmware 879), see libratone-sniffing/weekend/findings/2026-11-20_lssdp."""
+    Verified with two Zipps (firmware 879), linked while playing, linked while idle and unlinked."""
     state = fields.get("DeviceState", "")[:1].upper()
     zone = fields.get("ZoneID", "")
     link_id = zone[5:].strip() if zone.upper().startswith("LINK ") else (zone.strip() or None)

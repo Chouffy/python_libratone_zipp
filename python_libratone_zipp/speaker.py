@@ -51,6 +51,7 @@ class LibratoneSpeaker:
         self.host = host
         self.serial = serial
         self.expected_name = name   # used to re-identify legacy entries that have no serial yet
+        self.rediscover = False     # include in the hub's optional subnet sweep while missing
         # other names the speaker may answer with (entry title vs. stored device name)
         self.aliases = {n.casefold() for n in (name, *aliases) if n}
         self.name: str | None = None

@@ -5,6 +5,13 @@ notifications), so only one process/socket pair can talk to them. The hub owns t
 sockets, routes packets to speakers by source IP, and keeps the IP -> speaker mapping
 correct when DHCP hands a speaker a new address: speakers are identified by serial number,
 and an unknown IP that reports a known serial takes over that speaker.
+
+How a speaker that changed IP is found again (no configuration needed for the first two):
+- passively: every speaker broadcasts an LSSDP status (UDP 1800) every ~10 s with its name, serial and MAC;
+  the hub listens and follows a known serial to its new IP
+- one LSSDP search request (a single broadcast, like the Libratone app sends) while a speaker is missing
+- optional (`auto_rediscover`, off by default): sweep the speaker's /24 with a small unicast query, for setups
+  where broadcasts don't reach this host (e.g. Docker without host networking)
 """
 from __future__ import annotations
 
@@ -24,6 +31,7 @@ SLOW_POLL_EVERY = 30        # every Nth poll also asks the slow values (~5 min)
 SCAN_INTERVAL = 60          # min seconds between subnet scans while a speaker is missing
 SCAN_INTERVAL_LONG = 300    # ... once it has been missing for SCAN_BACKOFF_AFTER seconds
 SCAN_BACKOFF_AFTER = 600
+SEARCH_TARGETS: tuple[str, ...] | list[str] = ("255.255.255.255",)   # LSSDP search request goes here
 
 
 class _Endpoint(asyncio.DatagramProtocol):
@@ -48,8 +56,20 @@ def _bound_socket(port: int) -> socket.socket:
     return sock
 
 
+def _norm_mac(mac: str) -> str:
+    return "".join(c for c in mac.lower() if c in "0123456789abcdef")
+
+
 class LibratoneHub:
-    def __init__(self) -> None:
+    def __init__(self, auto_rediscover: bool = False,
+                 lssdp_search_targets: tuple[str, ...] | None = None) -> None:
+        """auto_rediscover: default for add_speaker(rediscover=...): while such a speaker is missing, sweep its
+        /24 subnet with a small unicast UDP query (2 packets per address). Off by default; only needed where
+        LSSDP broadcasts don't reach this host. lssdp_search_targets: where to send the LSSDP search request
+        while a speaker is missing (default SEARCH_TARGETS = broadcast; empty tuple: never)."""
+        self.auto_rediscover = auto_rediscover
+        self.lssdp_search_targets = lssdp_search_targets
+        self._lssdp: asyncio.DatagramTransport | None = None
         self.speakers: list[LibratoneSpeaker] = []
         # ip -> {"serial":..., "name":..., "ts":...} for every Libratone that answered us
         self.seen: dict[str, dict] = {}
@@ -69,6 +89,12 @@ class LibratoneHub:
             lambda: _Endpoint(self, p.PORT_RESULT), sock=_bound_socket(p.PORT_RESULT))
         self._notify, _ = await loop.create_datagram_endpoint(
             lambda: _Endpoint(self, p.PORT_NOTIFY), sock=_bound_socket(p.PORT_NOTIFY))
+        try:
+            self._lssdp, _ = await loop.create_datagram_endpoint(
+                lambda: _Endpoint(self, p.PORT_LSSDP), sock=_bound_socket(p.PORT_LSSDP))
+        except OSError as err:
+            _LOGGER.warning("Can't listen for LSSDP on UDP %s (%s): speakers that change IP are only found "
+                            "again by the search request or the application's discovery", p.PORT_LSSDP, err)
         self._task = loop.create_task(self._poll_loop(), name="libratone_hub_poll")
         _LOGGER.debug("Libratone hub listening on %s and %s", p.PORT_RESULT, p.PORT_NOTIFY)
 
@@ -79,19 +105,22 @@ class LibratoneHub:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        for t in (self._result, self._notify):
+        for t in (self._result, self._notify, self._lssdp):
             if t:
                 t.close()
         for handle in self._timers:
             handle.cancel()
         self._timers.clear()
-        self._result = self._notify = self._task = None
+        self._result = self._notify = self._lssdp = self._task = None
 
     # ------------------------------------------------------------------ registry
     def add_speaker(
-        self, host: str, serial: str | None, name: str | None, aliases: tuple[str, ...] = ()
+        self, host: str, serial: str | None, name: str | None, aliases: tuple[str, ...] = (),
+        rediscover: bool | None = None,
     ) -> LibratoneSpeaker:
+        """rediscover: include this speaker in the optional subnet sweep (default: the hub's auto_rediscover)."""
         spk = LibratoneSpeaker(self, host, serial=serial, name=name, aliases=aliases)
+        spk.rediscover = self.auto_rediscover if rediscover is None else rediscover
         self.speakers.append(spk)
         spk.refresh(full=True)
         return spk
@@ -106,6 +135,11 @@ class LibratoneHub:
 
     def by_serial(self, serial: str) -> LibratoneSpeaker | None:
         return next((s for s in self.speakers if s.serial == serial), None)
+
+    def by_mac(self, mac: str) -> LibratoneSpeaker | None:
+        """mac in any notation (c4:67:b5:..., C467B5...)."""
+        norm = _norm_mac(mac)
+        return next((s for s in self.speakers if s.mac and _norm_mac(s.mac) == norm), None)
 
     def group_members(self, spk: LibratoneSpeaker) -> list[LibratoneSpeaker]:
         """All speakers sharing spk's link id, master first. Empty if not grouped."""
@@ -203,12 +237,25 @@ class LibratoneHub:
                         member.notify()
 
     def _on_lssdp(self, data: bytes, ip: str) -> None:
-        """LSSDP status reply: authoritative group state. Deliberately NOT a sign of life:
-        the LSSDP service kept answering while a speaker's control service was hung."""
+        """LSSDP status (reply to our search, or the speaker's own broadcast every ~10 s): authoritative group
+        state, and the speaker's identity, so a speaker announcing itself from a new IP is followed there.
+        Deliberately NOT a sign of life: the LSSDP service kept answering while a control service was hung."""
         fields = p.parse_lssdp(data)
-        spk = self.by_host(ip)
-        if fields is None or spk is None:
+        if fields is None:
             return
+        name, _, serial = (fields.get("DeviceName") or "").rpartition("_")
+        _LOGGER.debug("LSSDP %s from %s: %s %s", "reply" if data[:4] == b"HTTP" else "announcement",
+                      ip, name or "?", fields.get("DeviceState"))
+        spk = self.by_host(ip)
+        if spk and spk.serial and serial and serial != spk.serial:
+            _LOGGER.info("%s no longer at %s (LSSDP shows serial %s there)", spk, ip, serial)
+            spk.host = ""
+            spk = None
+        if spk is None:
+            spk = self._identify_by(serial=serial or None, name=name or None, mac=fields.get("DeviceID"))
+            if spk is None:
+                return
+            self._rehome(spk, ip)
         group_changed, other_changed = spk.apply_lssdp(fields)
         if group_changed:
             for s in self.speakers:
@@ -227,6 +274,34 @@ class LibratoneHub:
             for fut in self._probes.pop(ip, []):
                 if not fut.done():
                     fut.set_result(dict(info))
+
+    def _identify_by(self, serial: str | None, name: str | None, mac: str | None) -> LibratoneSpeaker | None:
+        """Known speaker for this identity: by serial, by MAC, or (legacy entries without serial, only while
+        missing) by name. Sets the serial on a legacy match."""
+        spk = (self.by_serial(serial) if serial else None) or (self.by_mac(mac) if mac else None)
+        if spk is None and name:
+            matches = [s for s in self.speakers
+                       if s.serial is None and not s.available and name.casefold() in s.aliases]
+            if len(matches) == 1 and (serial is None or not self.by_serial(serial)):
+                spk = matches[0]
+                if serial:
+                    spk.serial = serial
+        return spk
+
+    def _rehome(self, spk: LibratoneSpeaker, ip: str) -> None:
+        if spk.host == ip:
+            return
+        old = spk.host
+        spk.host = ip
+        _LOGGER.warning("Libratone %s moved from %s to %s", spk.display_name, old or "?", ip)
+        spk.refresh(full=True)
+        spk.notify()   # listeners persist the new host (nothing else may change on this path)
+
+    def search(self) -> None:
+        """One LSSDP search request (broadcast, like the app sends); speakers answer on UDP 7778."""
+        targets = SEARCH_TARGETS if self.lssdp_search_targets is None else self.lssdp_search_targets
+        for target in targets:
+            self.send(target, p.LSSDP_MSEARCH, port=p.PORT_LSSDP)
 
     def _claim(self, ip: str) -> LibratoneSpeaker | None:
         """An unknown IP answered. Re-home a known speaker to it if the identity matches."""
@@ -255,10 +330,7 @@ class LibratoneHub:
                 self.send(ip, p.build_get(Cmd.NAME))
             return None
 
-        old = spk.host
-        spk.host = ip
-        _LOGGER.warning("Libratone %s moved from %s to %s", spk.display_name, old or "?", ip)
-        spk.refresh(full=True)
+        self._rehome(spk, ip)
         return spk
 
     # ------------------------------------------------------------------ probing / scanning
@@ -336,4 +408,7 @@ class LibratoneHub:
             return  # give it one poll interval before scanning
         interval = SCAN_INTERVAL if now - self._missing_since < SCAN_BACKOFF_AFTER else SCAN_INTERVAL_LONG
         if now - self._last_scan >= interval:
-            await self.scan()
+            self._last_scan = now
+            self.search()                                   # one packet; cheap
+            if any(s.rediscover for s in missing):          # optional sweep, off by default
+                await self.scan()
